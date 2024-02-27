@@ -4,3 +4,6 @@ version = "0.1.0"
 authors = ["nero19960329 <wangzhao2013tisnghua@gmail.com>"]
 about = "A simple git implementation in Rust"
 edition = "2021"
+
+[dependencies]
+clap = { version = "4.5.1", features = ["derive"] }
