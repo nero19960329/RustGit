@@ -83,43 +83,37 @@ fn test_cat_file() {
     let hash = from_utf8(&output.stdout).unwrap().trim().to_string();
     assert_eq!(hash.len(), 40);
 
-    rgit_command()
+    let result = rgit_command()
         .current_dir(dir.path())
         .args(["cat-file", "-p", &hash])
         .assert()
         .success();
-    let output = rgit_command()
-        .current_dir(dir.path())
-        .args(["cat-file", "-p", &hash])
-        .output()
-        .unwrap();
-    let cat_file_content = from_utf8(&output.stdout).unwrap().trim().to_string();
+    let cat_file_content = from_utf8(&result.get_output().stdout)
+        .unwrap()
+        .trim()
+        .to_string();
     assert_eq!(cat_file_content, content);
 
-    rgit_command()
+    let result = rgit_command()
         .current_dir(dir.path())
         .args(["cat-file", "-t", &hash])
         .assert()
         .success();
-    let output = rgit_command()
-        .current_dir(dir.path())
-        .args(["cat-file", "-t", &hash])
-        .output()
-        .unwrap();
-    let cat_file_type = from_utf8(&output.stdout).unwrap().trim().to_string();
+    let cat_file_type = from_utf8(&result.get_output().stdout)
+        .unwrap()
+        .trim()
+        .to_string();
     assert_eq!(cat_file_type, "blob");
 
-    rgit_command()
+    let result = rgit_command()
         .current_dir(dir.path())
         .args(["cat-file", "-s", &hash])
         .assert()
         .success();
-    let output = rgit_command()
-        .current_dir(dir.path())
-        .args(["cat-file", "-s", &hash])
-        .output()
-        .unwrap();
-    let cat_file_size = from_utf8(&output.stdout).unwrap().trim().to_string();
+    let cat_file_size = from_utf8(&result.get_output().stdout)
+        .unwrap()
+        .trim()
+        .to_string();
     assert_eq!(cat_file_size, content.len().to_string());
 
     rgit_command()
