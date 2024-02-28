@@ -1,4 +1,4 @@
-use clap::{Parser, Subcommand};
+use clap::{ArgGroup, Parser, Subcommand};
 use sha1::{Digest, Sha1};
 use std::env;
 use std::fs::{self, File};
@@ -27,10 +27,6 @@ enum RustGitSubCommands {
 /// Compute object ID
 #[derive(Parser, Debug)]
 struct HashObjectArgs {
-    /// Specify the type
-    #[arg(name = "type", default_value = "blob", short)]
-    type_: Option<String>,
-
     /// Actually write the object into the object database
     #[arg(name = "write", short)]
     write: bool,
@@ -40,6 +36,7 @@ struct HashObjectArgs {
 
 /// Provide content for repository objects
 #[derive(Parser, Debug)]
+#[clap(group(ArgGroup::new("mode").required(true).args(&["t", "s", "p"])))]
 struct CatFileArgs {
     /// Instead of the content, show the object type identified by <object>
     #[arg(name = "t", short)]
@@ -94,7 +91,7 @@ fn rgit_hash_object(args: &HashObjectArgs) {
     let content = fs::read_to_string(&file).unwrap();
     let size = content.len();
     let data = [
-        args.type_.as_ref().unwrap().as_bytes(),
+        &b"blob "[..],
         &b" "[..],
         size.to_string().as_bytes(),
         &b"\x00"[..],
@@ -135,7 +132,8 @@ fn rgit_cat_file(args: &CatFileArgs) {
 
     let mut header = Vec::new();
     reader.read_until(b'\x00', &mut header).unwrap();
-    let header = String::from_utf8(header).unwrap();
+    let binding = String::from_utf8(header).unwrap();
+    let header = binding.trim_end_matches('\x00');
     let (object_type, object_size) = header.split_once(" ").unwrap();
 
     if args.t {
