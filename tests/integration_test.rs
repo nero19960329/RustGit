@@ -66,6 +66,14 @@ fn test_rgit_hash_object() {
 #[test]
 fn test_cat_file() {
     let dir = tempfile::tempdir().unwrap();
+
+    // test under an un-initialized repository
+    rgit_command()
+        .current_dir(dir.path())
+        .args(["cat-file", "invalid_hash"])
+        .assert()
+        .failure();
+
     rgit_command()
         .current_dir(dir.path())
         .args(["init"])

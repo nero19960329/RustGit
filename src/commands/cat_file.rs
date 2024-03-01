@@ -1,8 +1,8 @@
+use super::super::error::RGitError;
+use super::super::utils::get_rgit_dir;
 use clap::{ArgGroup, Parser};
-use std::env;
 use std::fs::{self, File};
 use std::io::{self, BufRead, Read};
-use std::process;
 
 /// Provide content for repository objects
 #[derive(Parser, Debug)]
@@ -24,17 +24,15 @@ pub struct CatFileArgs {
     pub object: String,
 }
 
-pub fn rgit_cat_file(args: &CatFileArgs) {
-    let rgit_dir = env::current_dir().unwrap().join(".rgit");
-    if fs::metadata(&rgit_dir).is_err() {
-        eprintln!("fatal: not an rgit repository (or any of the parent directories): .rgit");
-        process::exit(128);
-    }
+pub fn rgit_cat_file(args: &CatFileArgs) -> Result<(), Box<RGitError>> {
+    let rgit_dir = get_rgit_dir()?;
 
     let object = &rgit_dir.join("objects").join(&args.object);
     if fs::metadata(&object).is_err() {
-        eprintln!("fatal: Not a valid object name {}", &args.object);
-        process::exit(128);
+        return Err(Box::new(RGitError::new(
+            format!("fatal: Not a valid object name {}", &args.object),
+            128,
+        )));
     }
 
     let object_file = File::open(&object).unwrap();
@@ -62,4 +60,6 @@ pub fn rgit_cat_file(args: &CatFileArgs) {
             print!("{}", s);
         }
     }
+
+    Ok(())
 }
