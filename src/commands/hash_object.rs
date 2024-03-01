@@ -1,6 +1,9 @@
+use super::super::error::RGitError;
+use super::super::utils::get_rgit_dir;
 use clap::Parser;
 use sha1::{Digest, Sha1};
-use std::{env, fs, process};
+use std::env;
+use std::fs;
 
 /// Compute object ID
 #[derive(Parser, Debug)]
@@ -12,15 +15,16 @@ pub struct HashObjectArgs {
     pub file: String,
 }
 
-pub fn rgit_hash_object(args: &HashObjectArgs) {
-    let rgit_dir = env::current_dir().unwrap().join(".rgit");
+pub fn rgit_hash_object(args: &HashObjectArgs) -> Result<(), Box<RGitError>> {
     let file = env::current_dir().unwrap().join(&args.file);
     if fs::metadata(&file).is_err() {
-        eprintln!(
-            "fatal: could not open '{}' for reading: No such file or directory",
-            &args.file
-        );
-        process::exit(128);
+        return Err(Box::new(RGitError::new(
+            format!(
+                "fatal: could not open '{}' for reading: No such file or directory",
+                &args.file
+            ),
+            128,
+        )));
     }
 
     let content = fs::read_to_string(&file).unwrap();
@@ -37,14 +41,14 @@ pub fn rgit_hash_object(args: &HashObjectArgs) {
     hasher.update(&data);
     let hash_result = hasher.finalize();
     let hash = format!("{:x}", hash_result);
-    let object = rgit_dir.join("objects").join(&hash);
+
     if args.write {
-        if fs::metadata(rgit_dir).is_ok() {
-            fs::write(&object, &data).unwrap();
-        } else {
-            eprintln!("fatal: not an rgit repository (or any of the parent directories): .rgit");
-            process::exit(128);
-        }
+        let rgit_dir = get_rgit_dir()?;
+
+        let object = rgit_dir.join("objects").join(&hash);
+        fs::write(&object, &data).unwrap();
     }
+
     println!("{}", hash);
+    Ok(())
 }

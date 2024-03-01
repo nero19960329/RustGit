@@ -1,7 +1,8 @@
+use super::super::error::RGitError;
 use std::env;
 use std::fs;
 
-pub fn rgit_init() {
+pub fn rgit_init() -> Result<(), Box<RGitError>> {
     let rgit_dir = env::current_dir().unwrap().join(".rgit");
     let rgit_dir_exist = fs::metadata(&rgit_dir).is_ok();
     if !rgit_dir_exist {
@@ -22,4 +23,6 @@ pub fn rgit_init() {
             rgit_dir.display()
         );
     }
+
+    Ok(())
 }
