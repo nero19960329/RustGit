@@ -1,7 +1,6 @@
 use super::super::error::RGitError;
-use super::super::utils::get_rgit_dir;
+use super::super::hash::hash_object;
 use clap::Parser;
-use sha1::{Digest, Sha1};
 use std::env;
 use std::fs;
 
@@ -27,27 +26,8 @@ pub fn rgit_hash_object(args: &HashObjectArgs) -> Result<(), Box<RGitError>> {
         )));
     }
 
-    let content = fs::read_to_string(&file).unwrap();
-    let size = content.len();
-    let data = [
-        &b"blob "[..],
-        &b" "[..],
-        size.to_string().as_bytes(),
-        &b"\x00"[..],
-        &content.as_bytes(),
-    ]
-    .concat();
-    let mut hasher = Sha1::new();
-    hasher.update(&data);
-    let hash_result = hasher.finalize();
-    let hash = format!("{:x}", hash_result);
-
-    if args.write {
-        let rgit_dir = get_rgit_dir()?;
-
-        let object = rgit_dir.join("objects").join(&hash);
-        fs::write(&object, &data).unwrap();
-    }
+    let content = fs::read(&file).unwrap();
+    let hash = hash_object(&content, "blob", args.write)?;
 
     println!("{}", hash);
     Ok(())

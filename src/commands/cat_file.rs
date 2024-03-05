@@ -2,7 +2,7 @@ use super::super::error::RGitError;
 use super::super::utils::get_rgit_dir;
 use clap::{ArgGroup, Parser};
 use std::fs::{self, File};
-use std::io::{self, BufRead, Read};
+use std::io::{self, copy, stdout, BufRead, Read};
 
 /// Provide content for repository objects
 #[derive(Parser, Debug)]
@@ -40,24 +40,56 @@ pub fn rgit_cat_file(args: &CatFileArgs) -> Result<(), Box<RGitError>> {
 
     let mut header = Vec::new();
     reader.read_until(b'\x00', &mut header).unwrap();
-    let binding = String::from_utf8(header).unwrap();
-    let header = binding.trim_end_matches('\x00');
-    let (object_type, object_size) = header.split_once(" ").unwrap();
+    let header = String::from_utf8(header).unwrap();
+
+    let (object_type, object_size) = header.trim_end_matches('\x00').split_once(' ').unwrap();
 
     if args.t {
         println!("{}", object_type);
     } else if args.s {
         println!("{}", object_size);
     } else if args.p {
-        assert!(object_type == "blob");
-        let mut buffer = [0; 1024];
-        loop {
-            let n = reader.read(&mut buffer).unwrap();
-            if n == 0 {
-                break;
+        match object_type {
+            "blob" => print_blob_content(&mut reader),
+            "tree" => print_tree_content(&mut reader)?,
+            _ => {
+                return Err(Box::new(RGitError::new(
+                    format!(
+                        "fatal: Unrecognized object type {} for {}",
+                        object_type, &args.object
+                    ),
+                    128,
+                )));
             }
-            let s = String::from_utf8_lossy(&buffer[..n]);
-            print!("{}", s);
+        }
+    }
+
+    Ok(())
+}
+
+fn print_blob_content<R: Read>(reader: &mut R) {
+    copy(reader, &mut stdout()).expect("Failed to print blob content");
+}
+
+fn print_tree_content<R: Read>(reader: &mut R) -> Result<(), Box<RGitError>> {
+    let mut content = Vec::new();
+    reader.read_to_end(&mut content).unwrap();
+
+    let content = String::from_utf8_lossy(&content);
+    for entry in content.split('\x00') {
+        if !entry.is_empty() {
+            let parts: Vec<&str> = entry.split_whitespace().collect();
+            if parts.len() != 4 {
+                return Err(Box::new(RGitError::new(
+                    format!("fatal: Invalid tree entry format: {}", entry),
+                    128,
+                )));
+            }
+            let mode = parts[0];
+            let object_type = parts[1];
+            let hash = parts[2];
+            let name = parts[3];
+            println!("{:06} {} {}\t{}", mode, object_type, hash, name);
         }
     }
 

@@ -32,4 +32,45 @@ fn test_rgit_end_to_end() {
         .success();
     let content = from_utf8(&result.get_output().stdout).unwrap().trim();
     assert_eq!(content, "Hello, World!");
+
+    let result = rgit_command()
+        .current_dir(dir.path())
+        .args(["write-tree"])
+        .assert()
+        .success();
+    let tree_hash = from_utf8(&result.get_output().stdout).unwrap().trim();
+
+    let result = rgit_command()
+        .current_dir(dir.path())
+        .args(["cat-file", "-p", tree_hash])
+        .assert()
+        .success();
+    let tree_content = from_utf8(&result.get_output().stdout).unwrap().trim();
+
+    assert!(tree_content.contains("100644 blob"));
+    assert!(tree_content.contains("test.txt"));
+
+    let subdir_path = dir.path().join("subdir");
+    fs::create_dir(&subdir_path).unwrap();
+    let file_path = subdir_path.join("subfile.txt");
+    fs::write(&file_path, "Subdir file content").unwrap();
+
+    let result = rgit_command()
+        .current_dir(dir.path())
+        .args(["write-tree"])
+        .assert()
+        .success();
+    let tree_hash = from_utf8(&result.get_output().stdout).unwrap().trim();
+
+    let result = rgit_command()
+        .current_dir(dir.path())
+        .args(["cat-file", "-p", tree_hash])
+        .assert()
+        .success();
+    let tree_content = from_utf8(&result.get_output().stdout).unwrap().trim();
+
+    assert!(tree_content.contains("100644 blob"));
+    assert!(tree_content.contains("test.txt"));
+    assert!(tree_content.contains("040000 tree"));
+    assert!(tree_content.contains("subdir"));
 }
