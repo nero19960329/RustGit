@@ -18,4 +18,7 @@ pub enum RustGitSubCommands {
 
     #[clap(name = "cat-file")]
     CatFile(CatFileArgs),
+
+    #[clap(name = "write-tree")]
+    WriteTree,
 }
