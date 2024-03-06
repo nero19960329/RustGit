@@ -1,5 +1,6 @@
 use super::super::error::RGitError;
 use super::super::hash::hash_object;
+use anyhow::Result;
 use clap::Parser;
 use std::env;
 use std::fs;
@@ -14,19 +15,19 @@ pub struct HashObjectArgs {
     pub file: String,
 }
 
-pub fn rgit_hash_object(args: &HashObjectArgs) -> Result<(), Box<RGitError>> {
-    let file = env::current_dir().unwrap().join(&args.file);
+pub fn rgit_hash_object(args: &HashObjectArgs) -> Result<()> {
+    let file = env::current_dir()?.join(&args.file);
     if fs::metadata(&file).is_err() {
-        return Err(Box::new(RGitError::new(
+        return Err(RGitError::new(
             format!(
                 "fatal: could not open '{}' for reading: No such file or directory",
                 &args.file
             ),
             128,
-        )));
+        ));
     }
 
-    let content = fs::read(&file).unwrap();
+    let content = fs::read(&file)?;
     let hash = hash_object(&content, "blob", args.write)?;
 
     println!("{}", hash);

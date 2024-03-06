@@ -1,22 +1,21 @@
-use super::error::{RGitError, NOT_RGIT_REPOSITORY};
+use super::error::RGitError;
+use anyhow::Result;
+use std::env;
 use std::path::PathBuf;
 
-fn find_rgit_dir() -> Option<PathBuf> {
-    let mut current_dir = std::env::current_dir().unwrap();
+pub fn get_rgit_dir() -> Result<PathBuf> {
+    let mut current_dir = env::current_dir()?;
     loop {
         let rgit_dir = current_dir.join(".rgit");
         if rgit_dir.is_dir() {
-            return Some(rgit_dir);
+            return Ok(rgit_dir);
         }
         if !current_dir.pop() {
-            return None;
+            return Err(RGitError::new(
+                "fatal: not a rgit repository (or any of the parent directories): .rgit"
+                    .to_string(),
+                128,
+            ));
         }
-    }
-}
-
-pub fn get_rgit_dir() -> Result<PathBuf, RGitError> {
-    match find_rgit_dir() {
-        Some(dir) => Ok(dir),
-        None => Err(RGitError::new(NOT_RGIT_REPOSITORY.to_string(), 128)),
     }
 }
