@@ -1,15 +1,15 @@
-use super::super::error::RGitError;
+use anyhow::Result;
 use std::env;
 use std::fs;
 
-pub fn rgit_init() -> Result<(), Box<RGitError>> {
-    let rgit_dir = env::current_dir().unwrap().join(".rgit");
+pub fn rgit_init() -> Result<()> {
+    let rgit_dir = env::current_dir()?.join(".rgit");
     let rgit_dir_exist = fs::metadata(&rgit_dir).is_ok();
     if !rgit_dir_exist {
-        fs::create_dir(".rgit").unwrap();
+        fs::create_dir(".rgit")?;
     }
     if fs::metadata(".rgit/objects").is_err() {
-        fs::create_dir(".rgit/objects").unwrap();
+        fs::create_dir(".rgit/objects")?;
     }
 
     if !rgit_dir_exist {

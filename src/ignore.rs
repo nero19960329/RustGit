@@ -1,5 +1,7 @@
+use anyhow::Result;
 use regex::Regex;
 use std::collections::HashMap;
+use std::env;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
@@ -22,7 +24,7 @@ impl IgnoreRule {
         }
     }
 
-    fn matches(&self, path: &Path, ignore_dir: &Path) -> bool {
+    fn matches(&self, path: &Path, ignore_dir: &Path) -> Result<bool> {
         let path_str = path.to_str().unwrap();
         let pattern = self
             .pattern
@@ -42,18 +44,18 @@ impl IgnoreRule {
             format!("^(.*/)?{}", pattern)
         };
 
-        let regex = Regex::new(&regex_pattern).unwrap();
+        let regex = Regex::new(&regex_pattern)?;
         let matched = regex.is_match(path_str);
 
         if self.only_dir && !matched {
-            return false;
+            return Ok(false);
         }
 
         if self.pattern.starts_with('/') && !path_str.starts_with(ignore_dir.to_str().unwrap()) {
-            return false;
+            return Ok(false);
         }
 
-        matched
+        Ok(matched)
     }
 }
 
@@ -63,16 +65,16 @@ pub struct RGitIgnore {
 }
 
 impl RGitIgnore {
-    pub fn new() -> Self {
+    pub fn new() -> Result<Self> {
         let mut rules = Vec::new();
         rules.push(IgnoreRule::new(
             ".rgit".to_string(),
             false,
             false,
-            std::env::current_dir().unwrap().join(".rgitignore"),
+            env::current_dir()?.join(".rgitignore"),
         ));
 
-        RGitIgnore { rules }
+        Ok(RGitIgnore { rules })
     }
 
     pub fn add_rule(&mut self, pattern: String, ignore_file_path: PathBuf) {
@@ -91,7 +93,7 @@ impl RGitIgnore {
         ));
     }
 
-    pub fn is_ignored(&self, path: &Path, ignore_dir: &Path) -> bool {
+    pub fn is_ignored(&self, path: &Path, ignore_dir: &Path) -> Result<bool> {
         let mut excluded = false;
         let mut parent_excluded = false;
 
@@ -110,7 +112,7 @@ impl RGitIgnore {
 
         for depth in depths {
             for rule in &rules_by_depth[&depth] {
-                if rule.matches(path, ignore_dir) {
+                if rule.matches(path, ignore_dir)? {
                     if rule.negated {
                         if excluded && !parent_excluded {
                             excluded = false;
@@ -125,7 +127,7 @@ impl RGitIgnore {
             }
         }
 
-        excluded
+        Ok(excluded)
     }
 
     pub fn load_ignore_files(path: &Path) -> Vec<PathBuf> {
@@ -149,8 +151,8 @@ impl RGitIgnore {
     }
 }
 
-pub fn load_ignore_rules(ignore_files: &[PathBuf]) -> RGitIgnore {
-    let mut rgitignore = RGitIgnore::new();
+pub fn load_ignore_rules(ignore_files: &[PathBuf]) -> Result<RGitIgnore> {
+    let mut rgitignore = RGitIgnore::new()?;
 
     for ignore_file in ignore_files {
         if let Ok(file) = File::open(ignore_file) {
@@ -163,7 +165,7 @@ pub fn load_ignore_rules(ignore_files: &[PathBuf]) -> RGitIgnore {
         }
     }
 
-    rgitignore
+    Ok(rgitignore)
 }
 
 #[cfg(test)]
@@ -190,7 +192,7 @@ mod tests {
         fs::create_dir_all(temp_dir.path().join(".github")).unwrap();
         File::create(temp_dir.path().join(".github/file.data")).unwrap();
 
-        let mut rgitignore = RGitIgnore::new();
+        let mut rgitignore = RGitIgnore::new().unwrap();
         let ignore_file_path = temp_dir.path().join(".rgitignore");
         rgitignore.add_rule("*.txt".to_string(), ignore_file_path.clone());
         rgitignore.add_rule("!important.txt".to_string(), ignore_file_path.clone());
@@ -200,15 +202,33 @@ mod tests {
 
         let ignore_dir = temp_dir.path();
 
-        assert!(rgitignore.is_ignored(&temp_dir.path().join("file.txt"), ignore_dir));
-        assert!(!rgitignore.is_ignored(&temp_dir.path().join("file.data"), ignore_dir));
-        assert!(!rgitignore.is_ignored(&temp_dir.path().join("important.txt"), ignore_dir));
-        assert!(rgitignore.is_ignored(&temp_dir.path().join("test"), ignore_dir));
-        assert!(rgitignore.is_ignored(&temp_dir.path().join("test/file.txt"), ignore_dir));
-        assert!(rgitignore.is_ignored(&temp_dir.path().join("other/file.txt"), ignore_dir));
-        assert!(rgitignore.is_ignored(&temp_dir.path().join("temp/file.data"), ignore_dir));
-        assert!(rgitignore.is_ignored(&temp_dir.path().join("subdir/temp/file.data"), ignore_dir));
-        assert!(!rgitignore.is_ignored(&temp_dir.path().join(".github/file.data"), ignore_dir));
+        assert!(rgitignore
+            .is_ignored(&temp_dir.path().join("file.txt"), ignore_dir)
+            .unwrap());
+        assert!(!rgitignore
+            .is_ignored(&temp_dir.path().join("file.data"), ignore_dir)
+            .unwrap());
+        assert!(!rgitignore
+            .is_ignored(&temp_dir.path().join("important.txt"), ignore_dir)
+            .unwrap());
+        assert!(rgitignore
+            .is_ignored(&temp_dir.path().join("test"), ignore_dir)
+            .unwrap());
+        assert!(rgitignore
+            .is_ignored(&temp_dir.path().join("test/file.txt"), ignore_dir)
+            .unwrap());
+        assert!(rgitignore
+            .is_ignored(&temp_dir.path().join("other/file.txt"), ignore_dir)
+            .unwrap());
+        assert!(rgitignore
+            .is_ignored(&temp_dir.path().join("temp/file.data"), ignore_dir)
+            .unwrap());
+        assert!(rgitignore
+            .is_ignored(&temp_dir.path().join("subdir/temp/file.data"), ignore_dir)
+            .unwrap());
+        assert!(!rgitignore
+            .is_ignored(&temp_dir.path().join(".github/file.data"), ignore_dir)
+            .unwrap());
     }
 
     #[test]
@@ -224,12 +244,20 @@ mod tests {
         write(&ignore_file_path, "file.txt\n!important.txt\ntest/\n").unwrap();
 
         let ignore_files = vec![ignore_file_path];
-        let rgitignore = load_ignore_rules(&ignore_files);
+        let rgitignore = load_ignore_rules(&ignore_files).unwrap();
 
-        assert!(rgitignore.is_ignored(&temp_dir.path().join("file.txt"), temp_dir.path()));
-        assert!(!rgitignore.is_ignored(&temp_dir.path().join("important.txt"), temp_dir.path()));
-        assert!(rgitignore.is_ignored(&temp_dir.path().join("test"), temp_dir.path()));
-        assert!(rgitignore.is_ignored(&temp_dir.path().join("test/file.txt"), temp_dir.path()));
+        assert!(rgitignore
+            .is_ignored(&temp_dir.path().join("file.txt"), temp_dir.path())
+            .unwrap());
+        assert!(!rgitignore
+            .is_ignored(&temp_dir.path().join("important.txt"), temp_dir.path())
+            .unwrap());
+        assert!(rgitignore
+            .is_ignored(&temp_dir.path().join("test"), temp_dir.path())
+            .unwrap());
+        assert!(rgitignore
+            .is_ignored(&temp_dir.path().join("test/file.txt"), temp_dir.path())
+            .unwrap());
     }
 
     #[test]
@@ -255,11 +283,19 @@ mod tests {
         File::create(subdir.join("file.txt")).unwrap();
         File::create(subdir.join("important.txt")).unwrap();
 
-        let rgitignore = load_ignore_rules(&ignore_files);
+        let rgitignore = load_ignore_rules(&ignore_files).unwrap();
 
-        assert!(rgitignore.is_ignored(&temp_dir.path().join("file.txt"), temp_dir.path()));
-        assert!(rgitignore.is_ignored(&temp_dir.path().join("important.txt"), temp_dir.path()));
-        assert!(rgitignore.is_ignored(&subdir.join("file.txt"), temp_dir.path()));
-        assert!(!rgitignore.is_ignored(&subdir.join("important.txt"), temp_dir.path()));
+        assert!(rgitignore
+            .is_ignored(&temp_dir.path().join("file.txt"), temp_dir.path())
+            .unwrap());
+        assert!(rgitignore
+            .is_ignored(&temp_dir.path().join("important.txt"), temp_dir.path())
+            .unwrap());
+        assert!(rgitignore
+            .is_ignored(&subdir.join("file.txt"), temp_dir.path())
+            .unwrap());
+        assert!(!rgitignore
+            .is_ignored(&subdir.join("important.txt"), temp_dir.path())
+            .unwrap());
     }
 }

@@ -6,6 +6,7 @@ description = "A simple git implementation in Rust"
 edition = "2021"
 
 [dependencies]
+anyhow = "1.0.80"
 clap = { version = "4.5.1", features = ["derive"] }
 regex = "1.10.3"
 sha1 = "0.10.6"

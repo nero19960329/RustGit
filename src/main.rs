@@ -19,14 +19,22 @@ fn main() {
         Some(RustGitSubCommands::HashObject(args)) => rgit_hash_object(args),
         Some(RustGitSubCommands::CatFile(args)) => rgit_cat_file(args),
         Some(RustGitSubCommands::WriteTree) => rgit_write_tree(),
-        None => Err(Box::new(RGitError::new(
+        None => Err(RGitError::new(
             "fatal: no command provided".to_string(),
             128,
-        ))),
+        )),
     };
 
-    if let Err(e) = result {
-        eprintln!("{}", e);
-        process::exit(e.exit_code.into());
+    if let Err(err) = result {
+        match err.downcast_ref::<RGitError>() {
+            Some(rgit_err) => {
+                eprintln!("{}", rgit_err.message);
+                process::exit(rgit_err.exit_code.into());
+            }
+            None => {
+                eprintln!("An unexpected error occurred: {}", err);
+                process::exit(1);
+            }
+        }
     }
 }

@@ -1,17 +1,15 @@
+use anyhow::Error;
 use std::fmt::{Display, Formatter, Result};
-
-pub const NOT_RGIT_REPOSITORY: &str =
-    "fatal: not a rgit repository (or any of the parent directories): .rgit";
 
 #[derive(Debug)]
 pub struct RGitError {
-    message: String,
+    pub message: String,
     pub exit_code: u8,
 }
 
 impl RGitError {
-    pub fn new(message: String, exit_code: u8) -> Self {
-        RGitError { message, exit_code }
+    pub fn new(message: String, exit_code: u8) -> Error {
+        Error::msg(Self { message, exit_code })
     }
 }
 
