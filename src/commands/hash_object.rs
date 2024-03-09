@@ -20,6 +20,6 @@ pub fn rgit_hash_object(args: &HashObjectArgs) -> Result<()> {
     if args.write {
         blob.write_object()?;
     }
-    println!("{}", hash);
+    println!("{}", hex::encode(hash));
     Ok(())
 }

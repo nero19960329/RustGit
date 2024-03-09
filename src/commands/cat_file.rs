@@ -23,7 +23,9 @@ pub struct CatFileArgs {
 }
 
 pub fn rgit_cat_file(args: &CatFileArgs) -> Result<()> {
-    let object = rgit_object_from_hash(&args.object)?;
+    let mut hash_array = [0; 20];
+    hex::decode_to_slice(&args.object, &mut hash_array)?;
+    let object = rgit_object_from_hash(&hash_array)?;
     if args.t {
         println!("{}", object.header()?.object_type);
     } else if args.s {
