@@ -12,6 +12,6 @@ pub fn rgit_write_tree() -> Result<()> {
     let tree_hash = tree.hash()?;
     tree.write_object()?;
 
-    println!("{}", tree_hash);
+    println!("{}", hex::encode(tree_hash));
     Ok(())
 }

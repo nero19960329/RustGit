@@ -65,13 +65,13 @@ impl RGitObjectHeader {
 
 pub trait RGitObject {
     fn header(&self) -> Result<RGitObjectHeader>;
-    fn hash(&self) -> Result<String>;
+    fn hash(&self) -> Result<&[u8; 20]>;
     fn write(&self) -> Result<()>;
     fn write_object(&self) -> Result<()>;
     fn print_object(&self) -> Result<()>;
 }
 
-pub fn rgit_object_from_hash(hash: &String) -> Result<Box<dyn RGitObject>> {
+pub fn rgit_object_from_hash(hash: &[u8; 20]) -> Result<Box<dyn RGitObject>> {
     let object_path = get_rgit_object_path(&hash, true)?;
     let header = RGitObjectHeader::deserialize(&mut fs::File::open(&object_path)?)?;
 

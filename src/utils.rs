@@ -21,7 +21,8 @@ pub fn get_rgit_dir() -> Result<PathBuf> {
     }
 }
 
-pub fn get_rgit_object_path(hash: &String, check_exists: bool) -> Result<PathBuf> {
+pub fn get_rgit_object_path(hash: &[u8; 20], check_exists: bool) -> Result<PathBuf> {
+    let hash = hex::encode(hash);
     let object_path = get_rgit_dir()?.join("objects").join(&hash);
     if check_exists && fs::metadata(&object_path).is_err() {
         return Err(RGitError::new(

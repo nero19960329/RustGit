@@ -6,7 +6,7 @@ use super::rgit_object::{RGitObject, RGitObjectHeader, RGitObjectType};
 use anyhow::{anyhow, Result};
 use std::collections::BTreeMap;
 use std::fs;
-use std::io::{Read, Write};
+use std::io::{BufRead, BufReader, Read, Write};
 use std::os::unix::fs::PermissionsExt;
 use std::path;
 
@@ -25,6 +25,16 @@ impl EntryType {
             EntryType::Executable => "100755",
             EntryType::Tree => "040000",
             EntryType::Symlink => "120000",
+        }
+    }
+
+    pub fn from_str(s: &str) -> Result<Self> {
+        match s {
+            "100644" => Ok(EntryType::Regular),
+            "100755" => Ok(EntryType::Executable),
+            "040000" => Ok(EntryType::Tree),
+            "120000" => Ok(EntryType::Symlink),
+            _ => Err(anyhow!("Invalid entry type: {}", s)),
         }
     }
 }
@@ -46,20 +56,25 @@ fn get_entry_mode(entry: &fs::DirEntry) -> Result<EntryType> {
     }
 }
 
+struct TreeEntry {
+    pub entry_type: EntryType,
+    pub rgit_object: Box<dyn RGitObject>,
+}
+
 pub struct Tree {
     #[allow(dead_code)]
     path: Option<path::PathBuf>,
-    hash: String,
+    hash: [u8; 20],
 
-    entries: BTreeMap<String, Box<dyn RGitObject>>,
-    content: String,
+    entries: BTreeMap<String, TreeEntry>,
+    content: Vec<u8>,
 }
 
 impl Tree {
     pub fn from_path(path: &path::PathBuf, rgitignore: &RGitIgnore) -> Result<Self> {
-        let mut entries: BTreeMap<String, Box<dyn RGitObject>> = BTreeMap::new();
+        let mut entries: BTreeMap<String, TreeEntry> = BTreeMap::new();
 
-        let mut content = Vec::new();
+        let mut content: Vec<u8> = Vec::new();
         for entry in fs::read_dir(path)? {
             let entry = entry?;
             let entry_path = entry.path();
@@ -82,16 +97,16 @@ impl Tree {
                 }
             };
 
-            let line = format!(
-                "{} {} {}\t{}\x00",
-                mode.as_str(),
-                object.header()?.object_type,
-                object.hash()?,
-                name
-            );
-            content.extend(line.as_bytes());
+            content.extend(format!("{} {}\x00", mode.as_str(), name).as_bytes());
+            content.extend(object.hash()?);
 
-            entries.insert(name, object);
+            entries.insert(
+                name,
+                TreeEntry {
+                    entry_type: mode,
+                    rgit_object: object,
+                },
+            );
         }
 
         let header = RGitObjectHeader {
@@ -103,11 +118,11 @@ impl Tree {
             path: Some(path.clone()),
             hash: hash(vec![header.serialize().as_slice(), content.as_slice()].into_iter())?,
             entries: entries,
-            content: String::from_utf8_lossy(&content).to_string(),
+            content: content,
         })
     }
 
-    pub fn from_hash(hash: String) -> Result<Self> {
+    pub fn from_hash(hash: [u8; 20]) -> Result<Self> {
         let object_path = get_rgit_object_path(&hash, true)?;
         let mut file = fs::File::open(&object_path)?;
         let header = RGitObjectHeader::deserialize(&mut file)?;
@@ -115,50 +130,54 @@ impl Tree {
             return Err(anyhow!("Invalid object type: {:?}", header.object_type));
         }
 
-        let mut entries: BTreeMap<String, Box<dyn RGitObject>> = BTreeMap::new();
+        let mut entries: BTreeMap<String, TreeEntry> = BTreeMap::new();
+
+        let mut reader = BufReader::new(file);
         let mut buffer = Vec::new();
-        file.read_to_end(&mut buffer)?;
-        for line in buffer.split(|&c| c == b'\x00') {
-            if line.is_empty() {
-                continue;
+        let mut bytes = Vec::new();
+        loop {
+            reader.read_until(b' ', &mut bytes)?;
+            if bytes.is_empty() {
+                break;
             }
-            let parts: Vec<&[u8]> = line.split(|&c| c == b' ' || c == b'\t').collect();
-            if parts.len() != 4 {
-                return Err(anyhow!(
-                    "Invalid tree entry: {:?}",
-                    String::from_utf8_lossy(line)
-                ));
-            }
+            buffer.extend(&bytes);
 
-            let object_type = match parts[1] {
-                b"blob" => RGitObjectType::Blob,
-                b"tree" => RGitObjectType::Tree,
+            let mode = String::from_utf8_lossy(&bytes[..bytes.len() - 1]).to_string();
+            let mode = EntryType::from_str(&mode)?;
+            bytes.clear();
+
+            reader.read_until(b'\x00', &mut bytes)?;
+            buffer.extend(&bytes);
+            let name = String::from_utf8_lossy(&bytes[..bytes.len() - 1]).to_string();
+            bytes.clear();
+
+            let mut hash = [0; 20];
+            reader.read_exact(&mut hash)?;
+            buffer.extend(&hash);
+
+            let object = match mode {
+                EntryType::Tree => Box::new(Tree::from_hash(hash)?) as Box<dyn RGitObject>,
+                EntryType::Regular | EntryType::Executable => {
+                    Box::new(Blob::from_hash(hash)?) as Box<dyn RGitObject>
+                }
                 _ => {
-                    return Err(anyhow!(
-                        "Invalid object type: {:?}",
-                        String::from_utf8_lossy(parts[1])
-                    ))
+                    return Err(anyhow!("Unsupported entry type: {:?}", mode));
                 }
             };
-            let hash = String::from_utf8_lossy(parts[2]).to_string();
-            let name = String::from_utf8_lossy(parts[3]).to_string();
-
-            let object = match object_type {
-                RGitObjectType::Blob => {
-                    Box::new(Blob::from_hash(hash.clone())?) as Box<dyn RGitObject>
-                }
-                RGitObjectType::Tree => {
-                    Box::new(Tree::from_hash(hash.clone())?) as Box<dyn RGitObject>
-                }
-            };
-            entries.insert(name, object);
+            entries.insert(
+                name,
+                TreeEntry {
+                    entry_type: mode,
+                    rgit_object: object,
+                },
+            );
         }
 
         Ok(Self {
             path: None,
             hash: hash.clone(),
             entries: entries,
-            content: String::from_utf8_lossy(&buffer).to_string(),
+            content: buffer,
         })
     }
 }
@@ -171,8 +190,8 @@ impl RGitObject for Tree {
         })
     }
 
-    fn hash(&self) -> Result<String> {
-        Ok(self.hash.clone())
+    fn hash(&self) -> Result<&[u8; 20]> {
+        Ok(&self.hash)
     }
 
     fn write(&self) -> Result<()> {
@@ -180,25 +199,36 @@ impl RGitObject for Tree {
     }
 
     fn write_object(&self) -> Result<()> {
-        let object_path = get_rgit_object_path(&self.hash()?, false)?;
+        let object_path = get_rgit_object_path(self.hash()?, false)?;
 
         fs::create_dir_all(object_path.parent().unwrap())?;
         let mut object_file = fs::File::create(&object_path)?;
         object_file.write_all(&self.header()?.serialize())?;
-        object_file.write_all(self.content.as_bytes())?;
+        object_file.write_all(&self.content)?;
 
-        for (_, object) in &self.entries {
-            object.write_object()?;
+        for (_, tree_entry) in &self.entries {
+            tree_entry.rgit_object.write_object()?;
         }
 
         Ok(())
     }
 
     fn print_object(&self) -> Result<()> {
-        let lines: Vec<&str> = self.content.split('\x00').collect();
-        for line in lines {
-            println!("{}", line);
+        for (name, tree_entry) in &self.entries {
+            let rgit_object_type = match tree_entry.rgit_object.header()? {
+                RGitObjectHeader { object_type, .. } => object_type,
+            };
+            let rgit_object_hash = tree_entry.rgit_object.hash()?;
+
+            println!(
+                "{} {} {}\t{}",
+                tree_entry.entry_type.as_str(),
+                rgit_object_type,
+                hex::encode(rgit_object_hash),
+                name,
+            );
         }
+
         Ok(())
     }
 }

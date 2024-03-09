@@ -10,7 +10,7 @@ use std::path;
 #[derive(Debug)]
 pub struct Blob {
     path: Option<path::PathBuf>,
-    hash: String,
+    hash: [u8; 20],
 
     size: usize,
 }
@@ -37,7 +37,7 @@ impl Blob {
         })
     }
 
-    pub fn from_hash(hash: String) -> Result<Blob> {
+    pub fn from_hash(hash: [u8; 20]) -> Result<Blob> {
         let object_path = get_rgit_object_path(&hash, true)?;
         let header = RGitObjectHeader::deserialize(&mut fs::File::open(&object_path)?)?;
         if header.object_type != RGitObjectType::Blob {
@@ -56,13 +56,13 @@ impl RGitObject for Blob {
         Ok(RGitObjectHeader::new(RGitObjectType::Blob, self.size))
     }
 
-    fn hash(&self) -> Result<String> {
-        Ok(self.hash.clone())
+    fn hash(&self) -> Result<&[u8; 20]> {
+        Ok(&self.hash)
     }
 
     fn write(&self) -> Result<()> {
         let path = self.path.as_ref().unwrap();
-        let object_path = get_rgit_object_path(&self.hash()?, true)?;
+        let object_path = get_rgit_object_path(self.hash()?, true)?;
 
         fs::create_dir_all(path.parent().unwrap())?;
         let mut file = fs::File::create(path)?;
@@ -75,7 +75,7 @@ impl RGitObject for Blob {
 
     fn write_object(&self) -> Result<()> {
         let path = self.path.as_ref().unwrap();
-        let object_path = get_rgit_object_path(&self.hash()?, false)?;
+        let object_path = get_rgit_object_path(self.hash()?, false)?;
 
         fs::create_dir_all(object_path.parent().unwrap())?;
         let mut file = fs::File::open(path)?;
@@ -87,7 +87,7 @@ impl RGitObject for Blob {
     }
 
     fn print_object(&self) -> Result<()> {
-        let object_path = get_rgit_object_path(&self.hash()?, true)?;
+        let object_path = get_rgit_object_path(self.hash()?, true)?;
         let mut file = fs::File::open(&object_path)?;
         let header = RGitObjectHeader::deserialize(&mut file)?;
         if header.object_type != RGitObjectType::Blob {
