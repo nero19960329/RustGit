@@ -3,6 +3,7 @@ mod commands;
 mod error;
 mod hash;
 mod ignore;
+mod objects;
 mod utils;
 
 use clap::Parser;

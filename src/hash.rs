@@ -1,21 +1,12 @@
-use super::utils::get_rgit_dir;
 use anyhow::Result;
 use sha1::{Digest, Sha1};
-use std::fs;
+use std::io::{self, Read};
 
-pub fn hash_object(data: &[u8], object_type: &str, write: bool) -> Result<String> {
+pub fn hash(readers: impl Iterator<Item = impl Read>) -> Result<String> {
     let mut hasher = Sha1::new();
-    let header = format!("{} {}\x00", object_type, data.len());
-    hasher.update(header.as_bytes());
-    hasher.update(data);
-    let hash = format!("{:x}", hasher.finalize());
-
-    if write {
-        let rgit_dir = get_rgit_dir()?;
-        let object_path = rgit_dir.join("objects").join(&hash);
-        fs::create_dir_all(object_path.parent().unwrap())?;
-        fs::write(object_path, [header.as_bytes(), data].concat())?;
+    for mut reader in readers {
+        io::copy(&mut reader, &mut hasher)?;
     }
-
-    Ok(hash)
+    let result = format!("{:x}", hasher.finalize());
+    Ok(result)
 }
