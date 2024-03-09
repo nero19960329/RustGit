@@ -7,7 +7,44 @@ use anyhow::{anyhow, Result};
 use std::collections::BTreeMap;
 use std::fs;
 use std::io::{Read, Write};
+use std::os::unix::fs::PermissionsExt;
 use std::path;
+
+#[derive(Debug, PartialEq)]
+pub enum EntryType {
+    Regular,
+    Executable,
+    Tree,
+    Symlink,
+}
+
+impl EntryType {
+    pub fn as_str(&self) -> &str {
+        match self {
+            EntryType::Regular => "100644",
+            EntryType::Executable => "100755",
+            EntryType::Tree => "040000",
+            EntryType::Symlink => "120000",
+        }
+    }
+}
+
+fn get_entry_mode(entry: &fs::DirEntry) -> Result<EntryType> {
+    let metadata = entry.metadata()?;
+    let file_type = metadata.file_type();
+    let permissions = metadata.permissions();
+    let mode = permissions.mode();
+
+    if file_type.is_dir() {
+        Ok(EntryType::Tree)
+    } else if file_type.is_symlink() {
+        Ok(EntryType::Symlink)
+    } else if mode & 0o111 != 0 {
+        Ok(EntryType::Executable)
+    } else {
+        Ok(EntryType::Regular)
+    }
+}
 
 pub struct Tree {
     #[allow(dead_code)]
@@ -22,6 +59,7 @@ impl Tree {
     pub fn from_path(path: &path::PathBuf, rgitignore: &RGitIgnore) -> Result<Self> {
         let mut entries: BTreeMap<String, Box<dyn RGitObject>> = BTreeMap::new();
 
+        let mut content = Vec::new();
         for entry in fs::read_dir(path)? {
             let entry = entry?;
             let entry_path = entry.path();
@@ -29,26 +67,31 @@ impl Tree {
                 continue;
             }
 
-            let file_type = entry.file_type()?;
             let name = entry.file_name().into_string().unwrap();
+            let mode = get_entry_mode(&entry)?;
 
-            if file_type.is_dir() {
-                let tree = Tree::from_path(&entry_path, rgitignore)?;
-                entries.insert(name, Box::new(tree));
-            } else {
-                let blob = Blob::from_path(&entry_path)?;
-                entries.insert(name, Box::new(blob));
-            }
-        }
-
-        let mut content = Vec::new();
-        for (name, object) in &entries {
-            let (mode, object_type, hash) = match object.header()?.object_type {
-                RGitObjectType::Blob => ("100644", "blob", object.hash()?),
-                RGitObjectType::Tree => ("040000", "tree", object.hash()?),
+            let object = match mode {
+                EntryType::Tree => {
+                    Box::new(Tree::from_path(&entry_path, rgitignore)?) as Box<dyn RGitObject>
+                }
+                EntryType::Regular | EntryType::Executable => {
+                    Box::new(Blob::from_path(&entry_path)?) as Box<dyn RGitObject>
+                }
+                _ => {
+                    return Err(anyhow!("Unsupported entry type: {:?}", mode));
+                }
             };
-            let line = format!("{} {} {}\t{}\x00", mode, object_type, hash, name);
+
+            let line = format!(
+                "{} {} {}\t{}\x00",
+                mode.as_str(),
+                object.header()?.object_type,
+                object.hash()?,
+                name
+            );
             content.extend(line.as_bytes());
+
+            entries.insert(name, object);
         }
 
         let header = RGitObjectHeader {
