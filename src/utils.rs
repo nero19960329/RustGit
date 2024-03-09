@@ -1,6 +1,7 @@
 use super::error::RGitError;
 use anyhow::Result;
 use std::env;
+use std::fs;
 use std::path::PathBuf;
 
 pub fn get_rgit_dir() -> Result<PathBuf> {
@@ -18,4 +19,15 @@ pub fn get_rgit_dir() -> Result<PathBuf> {
             ));
         }
     }
+}
+
+pub fn get_rgit_object_path(hash: &String, check_exists: bool) -> Result<PathBuf> {
+    let object_path = get_rgit_dir()?.join("objects").join(&hash);
+    if check_exists && fs::metadata(&object_path).is_err() {
+        return Err(RGitError::new(
+            format!("fatal: Not a valid object name {}", hash),
+            128,
+        ));
+    }
+    Ok(object_path)
 }
