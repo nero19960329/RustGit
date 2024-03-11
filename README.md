@@ -1,7 +1,9 @@
 # RustGit - A Toy Git CLI Written in Rust
 
 ![License](https://img.shields.io/badge/license-MIT-blue)
+[![codecov](https://codecov.io/gh/nero19960329/RustGit/graph/badge.svg?token=D2BBB05QHQ)](https://codecov.io/gh/nero19960329/RustGit)
 [![CI](https://github.com/nero19960329/RustGit/actions/workflows/ci.yml/badge.svg)](https://github.com/nero19960329/RustGit/actions/workflows/ci.yml)
+
 
 RustGit is a toy project developed to learn Rust by creating a simplified version of the Git CLI. This project aims to explore Rust's capabilities in handling command-line applications and manipulating data structures, similar to how Git operates. Although currently, it only includes basic functionalities, future enhancements will include more commands and performance optimizations.
 
