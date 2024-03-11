@@ -23,7 +23,10 @@ pub fn get_rgit_dir() -> Result<PathBuf> {
 
 pub fn get_rgit_object_path(hash: &[u8; 20], check_exists: bool) -> Result<PathBuf> {
     let hash = hex::encode(hash);
-    let object_path = get_rgit_dir()?.join("objects").join(&hash);
+    let object_path = get_rgit_dir()?
+        .join("objects")
+        .join(&hash[..2])
+        .join(&hash[2..]);
     if check_exists && fs::metadata(&object_path).is_err() {
         return Err(RGitError::new(
             format!("fatal: Not a valid object name {}", hash),
