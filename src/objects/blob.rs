@@ -5,18 +5,18 @@ use super::rgit_object::{RGitObject, RGitObjectHeader, RGitObjectType};
 use anyhow::{anyhow, Result};
 use std::fs;
 use std::io::{self, Write};
-use std::path;
+use std::path::{Path, PathBuf};
 
 #[derive(Debug)]
 pub struct Blob {
-    path: Option<path::PathBuf>,
+    path: Option<PathBuf>,
     hash: [u8; 20],
 
     size: usize,
 }
 
 impl Blob {
-    pub fn from_path(path: &path::PathBuf) -> Result<Blob> {
+    pub fn from_path(path: &Path) -> Result<Blob> {
         if fs::metadata(path).is_err() {
             return Err(RGitError::new(
                 format!(
@@ -31,7 +31,7 @@ impl Blob {
         let header = RGitObjectHeader::new(RGitObjectType::Blob, size);
 
         Ok(Blob {
-            path: Some(path.clone()),
+            path: Some(path.to_path_buf()),
             hash: hash(vec![header.serialize().as_slice(), &fs::read(path)?].into_iter())?,
             size: fs::metadata(&path)?.len() as usize,
         })
