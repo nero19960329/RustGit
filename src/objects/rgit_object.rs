@@ -72,7 +72,7 @@ pub trait RGitObject {
 }
 
 pub fn rgit_object_from_hash(hash: &[u8; 20]) -> Result<Box<dyn RGitObject>> {
-    let object_path = get_rgit_object_path(&hash, true)?;
+    let object_path = get_rgit_object_path(None, &hash, true)?;
     let header = RGitObjectHeader::deserialize(&mut fs::File::open(&object_path)?)?;
 
     match header.object_type {

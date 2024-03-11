@@ -123,7 +123,7 @@ impl Tree {
     }
 
     pub fn from_hash(hash: [u8; 20]) -> Result<Self> {
-        let object_path = get_rgit_object_path(&hash, true)?;
+        let object_path = get_rgit_object_path(None, &hash, true)?;
         let mut file = fs::File::open(&object_path)?;
         let header = RGitObjectHeader::deserialize(&mut file)?;
         if header.object_type != RGitObjectType::Tree {
@@ -199,7 +199,7 @@ impl RGitObject for Tree {
     }
 
     fn write_object(&self) -> Result<()> {
-        let object_path = get_rgit_object_path(self.hash()?, false)?;
+        let object_path = get_rgit_object_path(None, self.hash()?, false)?;
 
         fs::create_dir_all(object_path.parent().unwrap())?;
         let mut object_file = fs::File::create(&object_path)?;

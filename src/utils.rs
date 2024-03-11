@@ -2,16 +2,16 @@ use super::error::RGitError;
 use anyhow::Result;
 use std::env;
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
-pub fn get_rgit_dir() -> Result<PathBuf> {
-    let mut current_dir = env::current_dir()?;
+pub fn get_rgit_dir(root: Option<&Path>) -> Result<PathBuf> {
+    let mut root = root.unwrap_or(&env::current_dir()?).to_path_buf();
     loop {
-        let rgit_dir = current_dir.join(".rgit");
+        let rgit_dir = root.join(".rgit");
         if rgit_dir.is_dir() {
             return Ok(rgit_dir);
         }
-        if !current_dir.pop() {
+        if !root.pop() {
             return Err(RGitError::new(
                 "fatal: not a rgit repository (or any of the parent directories): .rgit"
                     .to_string(),
@@ -21,9 +21,13 @@ pub fn get_rgit_dir() -> Result<PathBuf> {
     }
 }
 
-pub fn get_rgit_object_path(hash: &[u8; 20], check_exists: bool) -> Result<PathBuf> {
+pub fn get_rgit_object_path(
+    root: Option<&Path>,
+    hash: &[u8; 20],
+    check_exists: bool,
+) -> Result<PathBuf> {
     let hash = hex::encode(hash);
-    let object_path = get_rgit_dir()?
+    let object_path = get_rgit_dir(root)?
         .join("objects")
         .join(&hash[..2])
         .join(&hash[2..]);
@@ -34,4 +38,95 @@ pub fn get_rgit_object_path(hash: &[u8; 20], check_exists: bool) -> Result<PathB
         ));
     }
     Ok(object_path)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rand::Rng;
+    use std::fs;
+    use tempfile::tempdir;
+
+    #[test]
+    fn test_get_rgit_dir() {
+        let temp_dir = tempdir().unwrap();
+        let rgit_dir = temp_dir.path().join(".rgit");
+        fs::create_dir(&rgit_dir).unwrap();
+
+        env::set_current_dir(&temp_dir).unwrap();
+
+        let result = get_rgit_dir(None);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), rgit_dir);
+
+        env::set_current_dir("/").unwrap();
+        temp_dir.close().unwrap();
+    }
+
+    #[test]
+    fn test_get_rgit_dir_error() {
+        let temp_dir = tempdir().unwrap();
+
+        env::set_current_dir(&temp_dir).unwrap();
+
+        let result = get_rgit_dir(None);
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("not a rgit repository"));
+
+        env::set_current_dir("/").unwrap();
+        temp_dir.close().unwrap();
+    }
+
+    #[test]
+    fn test_get_rgit_object_path() {
+        let temp_dir = tempdir().unwrap();
+        let rgit_dir = temp_dir.path().join(".rgit");
+        let objects_dir = rgit_dir.join("objects");
+        fs::create_dir_all(&objects_dir).unwrap();
+
+        env::set_current_dir(&temp_dir).unwrap();
+
+        let mut rng = rand::thread_rng();
+        let hash: [u8; 20] = rng.gen();
+        let hash_str = hex::encode(&hash);
+        let object_path = objects_dir.join(&hash_str[..2]).join(&hash_str[2..]);
+
+        let result = get_rgit_object_path(Some(temp_dir.path()), &hash, false);
+        println!("{:?}", result);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), object_path);
+
+        fs::create_dir_all(object_path.parent().unwrap()).unwrap();
+        fs::File::create(&object_path).unwrap();
+
+        let result = get_rgit_object_path(Some(temp_dir.path()), &hash, true);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), object_path);
+
+        env::set_current_dir("/").unwrap();
+        temp_dir.close().unwrap();
+    }
+
+    #[test]
+    fn test_get_rgit_object_path_error() {
+        let temp_dir = tempdir().unwrap();
+        let rgit_dir = temp_dir.path().join(".rgit");
+        let objects_dir = rgit_dir.join("objects");
+        fs::create_dir_all(&objects_dir).unwrap();
+
+        env::set_current_dir(&temp_dir).unwrap();
+
+        let result = get_rgit_object_path(Some(temp_dir.path()), &[0u8; 20], true);
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Not a valid object name"));
+
+        env::set_current_dir("/").unwrap();
+        temp_dir.close().unwrap();
+    }
 }

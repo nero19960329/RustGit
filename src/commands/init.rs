@@ -1,28 +1,55 @@
+use super::super::utils::get_rgit_dir;
 use anyhow::Result;
 use std::env;
 use std::fs;
+use std::path;
 
-pub fn rgit_init() -> Result<()> {
-    let rgit_dir = env::current_dir()?.join(".rgit");
-    let rgit_dir_exist = fs::metadata(&rgit_dir).is_ok();
-    if !rgit_dir_exist {
-        fs::create_dir(".rgit")?;
-    }
-    if fs::metadata(".rgit/objects").is_err() {
-        fs::create_dir(".rgit/objects")?;
-    }
-
-    if !rgit_dir_exist {
-        println!(
-            "Initialized empty RGit repository in {}",
-            rgit_dir.display()
-        );
-    } else {
+fn init_rgit_dir(root: &path::Path) -> Result<()> {
+    let rgit_dir = get_rgit_dir(Some(root));
+    if rgit_dir.is_ok() {
         println!(
             "Reinitialized existing RGit repository in {}",
-            rgit_dir.display()
+            rgit_dir.unwrap().display()
         );
+        return Ok(());
     }
 
+    let rgit_dir = root.join(".rgit");
+    fs::create_dir(&rgit_dir)?;
+    println!(
+        "Initialized empty RGit repository in {}",
+        rgit_dir.display()
+    );
     Ok(())
+}
+
+pub fn rgit_init() -> Result<()> {
+    init_rgit_dir(&env::current_dir()?)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+    use tempfile::tempdir;
+
+    #[test]
+    fn test_init_rgit_dir() {
+        let temp_dir = tempdir().unwrap();
+        let rgit_dir = temp_dir.path().join(".rgit");
+        let result = init_rgit_dir(temp_dir.path());
+        assert!(result.is_ok());
+        assert!(fs::metadata(&rgit_dir).is_ok());
+        temp_dir.close().unwrap();
+    }
+
+    #[test]
+    fn test_init_rgit_dir_already_exists() {
+        let temp_dir = tempdir().unwrap();
+        let rgit_dir = temp_dir.path().join(".rgit");
+        fs::create_dir(&rgit_dir).unwrap();
+        let result = init_rgit_dir(temp_dir.path());
+        assert!(result.is_ok());
+        temp_dir.close().unwrap();
+    }
 }
