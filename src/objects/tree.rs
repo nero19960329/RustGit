@@ -8,7 +8,7 @@ use std::collections::BTreeMap;
 use std::fs;
 use std::io::{BufRead, BufReader, Read, Write};
 use std::os::unix::fs::PermissionsExt;
-use std::path;
+use std::path::{Path, PathBuf};
 
 #[derive(Debug, PartialEq)]
 pub enum EntryType {
@@ -63,7 +63,7 @@ struct TreeEntry {
 
 pub struct Tree {
     #[allow(dead_code)]
-    path: Option<path::PathBuf>,
+    path: Option<PathBuf>,
     hash: [u8; 20],
 
     entries: BTreeMap<String, TreeEntry>,
@@ -71,7 +71,7 @@ pub struct Tree {
 }
 
 impl Tree {
-    pub fn from_path(path: &path::PathBuf, rgitignore: &RGitIgnore) -> Result<Self> {
+    pub fn from_path(path: &Path, rgitignore: &RGitIgnore) -> Result<Self> {
         let mut entries: BTreeMap<String, TreeEntry> = BTreeMap::new();
 
         let mut content: Vec<u8> = Vec::new();
@@ -115,7 +115,7 @@ impl Tree {
         };
 
         Ok(Self {
-            path: Some(path.clone()),
+            path: Some(path.to_path_buf()),
             hash: hash(vec![header.serialize().as_slice(), content.as_slice()].into_iter())?,
             entries: entries,
             content: content,

@@ -77,7 +77,7 @@ impl RGitIgnore {
         Ok(RGitIgnore { rules })
     }
 
-    pub fn add_rule(&mut self, pattern: String, ignore_file_path: PathBuf) {
+    pub fn add_rule(&mut self, pattern: String, ignore_file_path: &Path) {
         let negated = pattern.starts_with('!');
         let only_dir = pattern.ends_with('/');
         let pattern = pattern
@@ -89,7 +89,7 @@ impl RGitIgnore {
             pattern,
             negated,
             only_dir,
-            ignore_file_path,
+            ignore_file_path.to_path_buf(),
         ));
     }
 
@@ -159,7 +159,7 @@ pub fn load_ignore_rules(ignore_files: &[PathBuf]) -> Result<RGitIgnore> {
             let reader = BufReader::new(file);
             for line in reader.lines().flatten() {
                 if !line.is_empty() && !line.starts_with('#') {
-                    rgitignore.add_rule(line, ignore_file.clone());
+                    rgitignore.add_rule(line, ignore_file);
                 }
             }
         }
@@ -193,12 +193,13 @@ mod tests {
         File::create(temp_dir.path().join(".github/file.data")).unwrap();
 
         let mut rgitignore = RGitIgnore::new().unwrap();
-        let ignore_file_path = temp_dir.path().join(".rgitignore");
-        rgitignore.add_rule("*.txt".to_string(), ignore_file_path.clone());
-        rgitignore.add_rule("!important.txt".to_string(), ignore_file_path.clone());
-        rgitignore.add_rule("test/".to_string(), ignore_file_path.clone());
-        rgitignore.add_rule("**/temp/".to_string(), ignore_file_path.clone());
-        rgitignore.add_rule(".git".to_string(), ignore_file_path.clone());
+        let ignore_file_pathbuf = temp_dir.path().join(".rgitignore");
+        let ignore_file_path = ignore_file_pathbuf.as_path();
+        rgitignore.add_rule("*.txt".to_string(), ignore_file_path);
+        rgitignore.add_rule("!important.txt".to_string(), ignore_file_path);
+        rgitignore.add_rule("test/".to_string(), ignore_file_path);
+        rgitignore.add_rule("**/temp/".to_string(), ignore_file_path);
+        rgitignore.add_rule(".git".to_string(), ignore_file_path);
 
         let ignore_dir = temp_dir.path();
 
