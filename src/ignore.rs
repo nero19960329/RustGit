@@ -171,12 +171,14 @@ pub fn load_ignore_rules(ignore_files: &[PathBuf]) -> Result<RGitIgnore> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::env;
     use std::fs::{self, write, File};
     use tempfile::tempdir;
 
     #[test]
     fn test_is_ignored() {
         let temp_dir = tempdir().unwrap();
+        env::set_current_dir(&temp_dir.path()).unwrap();
 
         fs::create_dir_all(temp_dir.path().join("test")).unwrap();
         File::create(temp_dir.path().join("file.txt")).unwrap();
@@ -235,6 +237,7 @@ mod tests {
     #[test]
     fn test_load_ignore_rules() {
         let temp_dir = tempdir().unwrap();
+        env::set_current_dir(&temp_dir.path()).unwrap();
         let ignore_file_path = temp_dir.path().join(".rgitignore");
 
         fs::create_dir_all(temp_dir.path().join("test")).unwrap();
@@ -264,6 +267,7 @@ mod tests {
     #[test]
     fn test_load_ignore_files() {
         let temp_dir = tempdir().unwrap();
+        env::set_current_dir(&temp_dir.path()).unwrap();
         let subdir = temp_dir.path().join("subdir");
         fs::create_dir_all(&subdir).unwrap();
 
