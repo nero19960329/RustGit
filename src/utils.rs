@@ -5,7 +5,12 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 pub fn get_rgit_dir(root: Option<&Path>) -> Result<PathBuf> {
-    let mut root = root.unwrap_or(&env::current_dir()?).to_path_buf();
+    let current_dir = match root {
+        Some(path) => path.to_path_buf(),
+        None => env::current_dir()?,
+    };
+
+    let mut root = current_dir;
     loop {
         let rgit_dir = root.join(".rgit");
         if rgit_dir.is_dir() {

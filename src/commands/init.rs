@@ -5,7 +5,9 @@ use std::fs;
 use std::path;
 
 fn init_rgit_dir(root: &path::Path) -> Result<()> {
+    println!("root: {:?}", root);
     let rgit_dir = get_rgit_dir(Some(root));
+    println!("(1) rgit_dir: {:?}", rgit_dir);
     if rgit_dir.is_ok() {
         println!(
             "Reinitialized existing RGit repository in {}",
@@ -15,7 +17,9 @@ fn init_rgit_dir(root: &path::Path) -> Result<()> {
     }
 
     let rgit_dir = root.join(".rgit");
+    println!("(2) rgit_dir: {:?}", rgit_dir);
     fs::create_dir(&rgit_dir)?;
+    println!("create_dir ok!");
     println!(
         "Initialized empty RGit repository in {}",
         rgit_dir.display()
@@ -48,7 +52,9 @@ mod tests {
         let temp_dir = tempdir().unwrap();
         let rgit_dir = temp_dir.path().join(".rgit");
         fs::create_dir(&rgit_dir).unwrap();
+        println!("{:?}", rgit_dir);
         let result = init_rgit_dir(temp_dir.path());
+        println!("{:?}", result);
         assert!(result.is_ok());
         temp_dir.close().unwrap();
     }
