@@ -1,5 +1,5 @@
 use super::super::objects::{Blob, RGitObject};
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use clap::Parser;
 use std::env;
 use std::path;
@@ -24,10 +24,13 @@ fn hash_object(file: &path::Path, write: bool) -> Result<()> {
     Ok(())
 }
 
-fn path_from_str(s: &str) -> Result<path::PathBuf> {
+fn path_from_str(s: &str, root: Option<&path::Path>) -> Result<path::PathBuf> {
     let path = path::PathBuf::from(s);
     if path.is_relative() {
-        let current_dir = env::current_dir()?;
+        let current_dir = match root {
+            Some(path) => path.to_path_buf(),
+            None => return Err(anyhow!("No root path provided")),
+        };
         Ok(current_dir.join(path))
     } else {
         Ok(path)
@@ -35,27 +38,27 @@ fn path_from_str(s: &str) -> Result<path::PathBuf> {
 }
 
 pub fn rgit_hash_object(args: &HashObjectArgs) -> Result<()> {
-    let file = path_from_str(&args.file)?;
+    let root = env::current_dir()?;
+    let file = path_from_str(&args.file, Some(&root))?;
     hash_object(&file, args.write)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::env;
     use std::fs;
     use tempfile::tempdir;
 
     #[test]
     fn test_path_from_str() {
         let dir = tempdir().unwrap();
-        env::set_current_dir(&dir).unwrap();
+
         let file = dir.path().join("test.txt");
         fs::File::create(&file).unwrap();
-        let path = path_from_str("test.txt").unwrap();
+        let path = path_from_str("test.txt", Some(dir.path())).unwrap();
         assert_eq!(path, file);
 
-        let path = path_from_str("/test.txt").unwrap();
+        let path = path_from_str("/test.txt", Some(dir.path())).unwrap();
         assert_eq!(path, path::PathBuf::from("/test.txt"));
     }
 }
