@@ -110,7 +110,7 @@ fn path_equal(p: &path::Path, q: &path::Path) -> Result<bool> {
 }
 
 pub fn is_ignored(file_path: &path::Path) -> Result<RGitIgnoreResult> {
-    let rgit_dir = get_rgit_dir()?;
+    let rgit_dir = get_rgit_dir(file_path)?;
     let mut cur_dir = file_path.parent().unwrap();
     let mut result = None;
     let mut matched_rule = None;

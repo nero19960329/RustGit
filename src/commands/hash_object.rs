@@ -1,4 +1,5 @@
 use super::super::objects::{Blob, RGitObject};
+use super::super::utils::get_rgit_dir;
 use anyhow::Result;
 use clap::Parser;
 use std::env;
@@ -18,7 +19,8 @@ pub fn rgit_hash_object(args: &HashObjectArgs) -> Result<()> {
     let blob = Blob::from_path(&file)?;
     let hash = blob.hash()?;
     if args.write {
-        blob.write_object()?;
+        let rgit_dir = get_rgit_dir(env::current_dir()?.as_path())?;
+        blob.write_object(rgit_dir.as_path())?;
     }
     println!("{}", hex::encode(hash));
     Ok(())
