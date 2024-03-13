@@ -1,5 +1,5 @@
 use super::super::hash::hash;
-use super::super::ignore::RGitIgnore;
+use super::super::ignore::is_ignored;
 use super::super::utils::get_rgit_object_path;
 use super::blob::Blob;
 use super::rgit_object::{RGitObject, RGitObjectHeader, RGitObjectType};
@@ -71,24 +71,22 @@ pub struct Tree {
 }
 
 impl Tree {
-    pub fn from_path(path: &Path, rgitignore: &RGitIgnore) -> Result<Self> {
+    pub fn from_path(path: &Path) -> Result<Self> {
         let mut entries: BTreeMap<String, TreeEntry> = BTreeMap::new();
 
         let mut content: Vec<u8> = Vec::new();
         for entry in fs::read_dir(path)? {
             let entry = entry?;
             let entry_path = entry.path();
-            if rgitignore.is_ignored(&entry_path, &path)? {
+            if is_ignored(&entry_path)?.is_ignored {
                 continue;
-            }
+            };
 
             let name = entry.file_name().into_string().unwrap();
             let mode = get_entry_mode(&entry)?;
 
             let object = match mode {
-                EntryType::Tree => {
-                    Box::new(Tree::from_path(&entry_path, rgitignore)?) as Box<dyn RGitObject>
-                }
+                EntryType::Tree => Box::new(Tree::from_path(&entry_path)?) as Box<dyn RGitObject>,
                 EntryType::Regular | EntryType::Executable => {
                     Box::new(Blob::from_path(&entry_path)?) as Box<dyn RGitObject>
                 }
