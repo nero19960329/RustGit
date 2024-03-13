@@ -46,3 +46,82 @@ pub fn get_rgit_object_path(
     }
     Ok(object_path)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rand::Rng;
+    use std::fs;
+    use tempfile::tempdir;
+
+    #[test]
+    fn test_get_rgit_dir() {
+        let temp_dir = tempdir().unwrap();
+
+        let result = get_rgit_dir(temp_dir.path());
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("not a rgit repository"));
+
+        let rgit_dir = temp_dir.path().join(".rgit");
+        fs::create_dir(&rgit_dir).unwrap();
+        let result = get_rgit_dir(temp_dir.path());
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), rgit_dir);
+
+        temp_dir.close().unwrap();
+    }
+
+    #[test]
+    fn test_get_rgit_object_path() {
+        let temp_dir = tempdir().unwrap();
+        let rgit_dir = temp_dir.path().join(".rgit");
+
+        fs::write(temp_dir.path().join(".rgit"), "").unwrap();
+        let result = get_rgit_object_path(rgit_dir.as_path(), &[0u8; 20], false);
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("not a rgit repository"));
+        fs::remove_file(temp_dir.path().join(".rgit")).unwrap();
+
+        let result = get_rgit_object_path(rgit_dir.as_path(), &[0u8; 20], false);
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("not a rgit repository"));
+
+        let objects_dir = rgit_dir.join("objects");
+        fs::create_dir_all(&objects_dir).unwrap();
+
+        let mut rng = rand::thread_rng();
+        let hash: [u8; 20] = rng.gen();
+        let hash_str = hex::encode(&hash);
+        let object_path = objects_dir.join(&hash_str[..2]).join(&hash_str[2..]);
+
+        let result = get_rgit_object_path(rgit_dir.as_path(), &hash, false);
+        println!("{:?}", result);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), object_path);
+
+        fs::create_dir_all(object_path.parent().unwrap()).unwrap();
+        fs::File::create(&object_path).unwrap();
+
+        let result = get_rgit_object_path(rgit_dir.as_path(), &hash, true);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), object_path);
+
+        let result = get_rgit_object_path(rgit_dir.as_path(), &[0u8; 20], true);
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Not a valid object name"));
+
+        temp_dir.close().unwrap();
+    }
+}
