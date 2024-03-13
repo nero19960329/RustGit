@@ -5,6 +5,7 @@ use anyhow::{anyhow, Result};
 use std::fmt;
 use std::fs;
 use std::io;
+use std::path;
 
 #[derive(Debug, PartialEq)]
 pub enum RGitObjectType {
@@ -66,17 +67,20 @@ impl RGitObjectHeader {
 pub trait RGitObject {
     fn header(&self) -> Result<RGitObjectHeader>;
     fn hash(&self) -> Result<&[u8; 20]>;
-    fn write(&self) -> Result<()>;
-    fn write_object(&self) -> Result<()>;
-    fn print_object(&self) -> Result<()>;
+    fn write(&self, rgit_dir: &path::Path) -> Result<()>;
+    fn write_object(&self, rgit_dir: &path::Path) -> Result<()>;
+    fn print_object(&self, rgit_dir: &path::Path) -> Result<()>;
 }
 
-pub fn rgit_object_from_hash(hash: &[u8; 20]) -> Result<Box<dyn RGitObject>> {
-    let object_path = get_rgit_object_path(&hash, true)?;
+pub fn rgit_object_from_hash(
+    rgit_dir: &path::Path,
+    hash: &[u8; 20],
+) -> Result<Box<dyn RGitObject>> {
+    let object_path = get_rgit_object_path(rgit_dir, &hash, true)?;
     let header = RGitObjectHeader::deserialize(&mut fs::File::open(&object_path)?)?;
 
     match header.object_type {
-        RGitObjectType::Tree => Ok(Box::new(Tree::from_hash(hash.clone())?)),
-        RGitObjectType::Blob => Ok(Box::new(Blob::from_hash(hash.clone())?)),
+        RGitObjectType::Tree => Ok(Box::new(Tree::from_hash(rgit_dir, hash.clone())?)),
+        RGitObjectType::Blob => Ok(Box::new(Blob::from_hash(rgit_dir, hash.clone())?)),
     }
 }

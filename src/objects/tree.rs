@@ -120,8 +120,8 @@ impl Tree {
         })
     }
 
-    pub fn from_hash(hash: [u8; 20]) -> Result<Self> {
-        let object_path = get_rgit_object_path(&hash, true)?;
+    pub fn from_hash(rgit_dir: &Path, hash: [u8; 20]) -> Result<Self> {
+        let object_path = get_rgit_object_path(rgit_dir, &hash, true)?;
         let mut file = fs::File::open(&object_path)?;
         let header = RGitObjectHeader::deserialize(&mut file)?;
         if header.object_type != RGitObjectType::Tree {
@@ -154,9 +154,11 @@ impl Tree {
             buffer.extend(&hash);
 
             let object = match mode {
-                EntryType::Tree => Box::new(Tree::from_hash(hash)?) as Box<dyn RGitObject>,
+                EntryType::Tree => {
+                    Box::new(Tree::from_hash(rgit_dir, hash)?) as Box<dyn RGitObject>
+                }
                 EntryType::Regular | EntryType::Executable => {
-                    Box::new(Blob::from_hash(hash)?) as Box<dyn RGitObject>
+                    Box::new(Blob::from_hash(rgit_dir, hash)?) as Box<dyn RGitObject>
                 }
                 _ => {
                     return Err(anyhow!("Unsupported entry type: {:?}", mode));
@@ -192,12 +194,12 @@ impl RGitObject for Tree {
         Ok(&self.hash)
     }
 
-    fn write(&self) -> Result<()> {
+    fn write(&self, _rgit_dir: &Path) -> Result<()> {
         unimplemented!()
     }
 
-    fn write_object(&self) -> Result<()> {
-        let object_path = get_rgit_object_path(self.hash()?, false)?;
+    fn write_object(&self, rgit_dir: &Path) -> Result<()> {
+        let object_path = get_rgit_object_path(rgit_dir, self.hash()?, false)?;
 
         fs::create_dir_all(object_path.parent().unwrap())?;
         let mut object_file = fs::File::create(&object_path)?;
@@ -205,13 +207,13 @@ impl RGitObject for Tree {
         object_file.write_all(&self.content)?;
 
         for (_, tree_entry) in &self.entries {
-            tree_entry.rgit_object.write_object()?;
+            tree_entry.rgit_object.write_object(rgit_dir)?;
         }
 
         Ok(())
     }
 
-    fn print_object(&self) -> Result<()> {
+    fn print_object(&self, _rgit_dir: &Path) -> Result<()> {
         for (name, tree_entry) in &self.entries {
             let rgit_object_type = match tree_entry.rgit_object.header()? {
                 RGitObjectHeader { object_type, .. } => object_type,

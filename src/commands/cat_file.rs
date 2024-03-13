@@ -1,6 +1,8 @@
 use super::super::objects::rgit_object_from_hash;
+use super::super::utils::get_rgit_dir;
 use anyhow::Result;
 use clap::{ArgGroup, Parser};
+use std::env;
 
 /// Provide content for repository objects
 #[derive(Parser, Debug)]
@@ -23,15 +25,16 @@ pub struct CatFileArgs {
 }
 
 pub fn rgit_cat_file(args: &CatFileArgs) -> Result<()> {
+    let rgit_dir = get_rgit_dir(env::current_dir()?.as_path())?;
     let mut hash_array = [0; 20];
     hex::decode_to_slice(&args.object, &mut hash_array)?;
-    let object = rgit_object_from_hash(&hash_array)?;
+    let object = rgit_object_from_hash(rgit_dir.as_path(), &hash_array)?;
     if args.t {
         println!("{}", object.header()?.object_type);
     } else if args.s {
         println!("{}", object.header()?.size);
     } else if args.p {
-        object.print_object()?;
+        object.print_object(rgit_dir.as_path())?;
     }
 
     Ok(())

@@ -110,7 +110,7 @@ fn path_equal(p: &path::Path, q: &path::Path) -> Result<bool> {
 }
 
 pub fn is_ignored(file_path: &path::Path) -> Result<RGitIgnoreResult> {
-    let rgit_dir = get_rgit_dir()?;
+    let rgit_dir = get_rgit_dir(file_path)?;
     let mut cur_dir = file_path.parent().unwrap();
     let mut result = None;
     let mut matched_rule = None;
@@ -147,7 +147,6 @@ pub fn is_ignored(file_path: &path::Path) -> Result<RGitIgnoreResult> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::env;
     use tempfile::tempdir;
 
     #[test]
@@ -320,7 +319,6 @@ mod tests {
     fn test_is_ignored() {
         let dir = tempdir().unwrap();
         fs::create_dir_all(dir.path().join(".rgit")).unwrap();
-        env::set_current_dir(&dir.path()).unwrap();
 
         let rgitignore_path = dir.path().join(".rgitignore");
         fs::write(&rgitignore_path, "*.txt\n").unwrap();

@@ -37,8 +37,8 @@ impl Blob {
         })
     }
 
-    pub fn from_hash(hash: [u8; 20]) -> Result<Blob> {
-        let object_path = get_rgit_object_path(&hash, true)?;
+    pub fn from_hash(rgit_dir: &Path, hash: [u8; 20]) -> Result<Blob> {
+        let object_path = get_rgit_object_path(rgit_dir, &hash, true)?;
         let header = RGitObjectHeader::deserialize(&mut fs::File::open(&object_path)?)?;
         if header.object_type != RGitObjectType::Blob {
             return Err(anyhow!("Invalid object type: {:?}", header.object_type));
@@ -60,9 +60,9 @@ impl RGitObject for Blob {
         Ok(&self.hash)
     }
 
-    fn write(&self) -> Result<()> {
+    fn write(&self, rgit_dir: &Path) -> Result<()> {
         let path = self.path.as_ref().unwrap();
-        let object_path = get_rgit_object_path(self.hash()?, true)?;
+        let object_path = get_rgit_object_path(rgit_dir, self.hash()?, true)?;
 
         fs::create_dir_all(path.parent().unwrap())?;
         let mut file = fs::File::create(path)?;
@@ -73,9 +73,9 @@ impl RGitObject for Blob {
         Ok(())
     }
 
-    fn write_object(&self) -> Result<()> {
+    fn write_object(&self, rgit_dir: &Path) -> Result<()> {
         let path = self.path.as_ref().unwrap();
-        let object_path = get_rgit_object_path(self.hash()?, false)?;
+        let object_path = get_rgit_object_path(rgit_dir, self.hash()?, false)?;
 
         fs::create_dir_all(object_path.parent().unwrap())?;
         let mut file = fs::File::open(path)?;
@@ -86,8 +86,8 @@ impl RGitObject for Blob {
         Ok(())
     }
 
-    fn print_object(&self) -> Result<()> {
-        let object_path = get_rgit_object_path(self.hash()?, true)?;
+    fn print_object(&self, rgit_dir: &Path) -> Result<()> {
+        let object_path = get_rgit_object_path(rgit_dir, self.hash()?, true)?;
         let mut file = fs::File::open(&object_path)?;
         let header = RGitObjectHeader::deserialize(&mut file)?;
         if header.object_type != RGitObjectType::Blob {
