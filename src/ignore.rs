@@ -154,6 +154,7 @@ pub fn is_ignored(file_path: &path::Path) -> Result<RGitIgnoreResult> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::utils::init_rgit_dir;
     use tempfile::tempdir;
 
     #[test]
@@ -325,7 +326,7 @@ mod tests {
     #[test]
     fn test_is_ignored() {
         let dir = tempdir().unwrap();
-        fs::create_dir_all(dir.path().join(".rgit")).unwrap();
+        init_rgit_dir(dir.path()).unwrap();
 
         let rgitignore_path = dir.path().join(".rgitignore");
         fs::write(&rgitignore_path, "*.txt\n").unwrap();

@@ -1,17 +1,12 @@
+use super::super::utils::init_rgit_dir;
 use anyhow::Result;
 use std::env;
 use std::fs;
 
 pub fn rgit_init() -> Result<()> {
-    let rgit_dir = env::current_dir()?.join(".rgit");
-    let rgit_dir_exist = fs::metadata(&rgit_dir).is_ok();
-    if !rgit_dir_exist {
-        fs::create_dir(".rgit")?;
-    }
-    if fs::metadata(".rgit/objects").is_err() {
-        fs::create_dir(".rgit/objects")?;
-    }
-
+    let dir = env::current_dir()?;
+    let rgit_dir_exist = fs::metadata(&dir.join(".rgit")).is_ok();
+    let rgit_dir = init_rgit_dir(&dir)?;
     if !rgit_dir_exist {
         println!(
             "Initialized empty RGit repository in {}",
