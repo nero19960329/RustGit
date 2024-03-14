@@ -124,11 +124,15 @@ fn test_cat_file() {
         .to_string();
     assert_eq!(cat_file_size, content.len().to_string());
 
-    rgit_command()
+    let result = rgit_command()
         .current_dir(dir.path())
         .args(["cat-file", "-p", "invalid_hash"])
         .assert()
         .failure();
+    assert_eq!(
+        from_utf8(&result.get_output().stderr).unwrap().trim(),
+        "fatal: Not a valid object name invalid_hash"
+    );
 
     rgit_command()
         .current_dir(dir.path())

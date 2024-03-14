@@ -1,3 +1,4 @@
+use super::super::error::RGitError;
 use super::super::objects::rgit_object_from_hash;
 use super::super::utils::get_rgit_dir;
 use anyhow::Result;
@@ -28,7 +29,12 @@ pub struct CatFileArgs {
 pub fn rgit_cat_file(args: &CatFileArgs) -> Result<()> {
     let rgit_dir = get_rgit_dir(env::current_dir()?.as_path())?;
     let mut hash_array = [0; 20];
-    hex::decode_to_slice(&args.object, &mut hash_array)?;
+    hex::decode_to_slice(&args.object, &mut hash_array).map_err(|_| {
+        RGitError::new(
+            format!("fatal: Not a valid object name {}", args.object),
+            128,
+        )
+    })?;
     let object = rgit_object_from_hash(rgit_dir.as_path(), &hash_array)?;
     if args.t {
         println!("{}", object.header()?.object_type);
