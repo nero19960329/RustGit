@@ -83,14 +83,11 @@ impl RGitObject for Blob {
         Ok(())
     }
 
-    fn print_object(&self, rgit_dir: &Path) -> Result<()> {
+    fn serialize_object(&self, rgit_dir: &Path, writer: &mut dyn Write) -> Result<()> {
         let object_path = get_rgit_object_path(rgit_dir, self.hash()?, true)?;
         let mut file = fs::File::open(&object_path)?;
-        let header = RGitObjectHeader::deserialize(&mut file)?;
-        if header.object_type != RGitObjectType::Blob {
-            return Err(anyhow!("Invalid object type: {:?}", header.object_type));
-        }
-        io::copy(&mut file, &mut io::stdout())?;
+        RGitObjectHeader::deserialize(&mut file)?;
+        io::copy(&mut file, writer)?;
         Ok(())
     }
 }

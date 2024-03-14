@@ -3,6 +3,7 @@ use super::super::utils::get_rgit_dir;
 use anyhow::Result;
 use clap::{ArgGroup, Parser};
 use std::env;
+use std::io;
 
 /// Provide content for repository objects
 #[derive(Parser, Debug)]
@@ -34,7 +35,7 @@ pub fn rgit_cat_file(args: &CatFileArgs) -> Result<()> {
     } else if args.s {
         println!("{}", object.header()?.size);
     } else if args.p {
-        object.print_object(rgit_dir.as_path())?;
+        object.serialize_object(rgit_dir.as_path(), &mut io::stdout())?;
     }
 
     Ok(())
