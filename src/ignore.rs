@@ -117,18 +117,25 @@ pub fn is_ignored(file_path: &path::Path) -> Result<RGitIgnoreResult> {
 
     loop {
         let rgitignore_path = cur_dir.join(".rgitignore");
-        if rgitignore_path.is_file() {
-            let rules = load_ignore_rules(&rgitignore_path)?;
-            for rule in rules {
-                let is_ignored = is_ignored_by_rule(file_path, &rule)?;
 
-                if is_ignored.is_some()
-                    && (result.is_none()
-                        || (result.is_some() && result.unwrap() && !is_ignored.unwrap()))
-                {
-                    result = is_ignored;
-                    matched_rule = Some(rule);
-                }
+        let mut rules = vec![RGitIgnoreRule {
+            rule: "*.rgit".to_string(),
+            rgitignore_path: rgitignore_path.clone(),
+            line_number: 0,
+        }];
+        if rgitignore_path.is_file() {
+            rules.append(&mut load_ignore_rules(&rgitignore_path)?);
+        }
+
+        for rule in rules {
+            let is_ignored = is_ignored_by_rule(file_path, &rule)?;
+
+            if is_ignored.is_some()
+                && (result.is_none()
+                    || (result.is_some() && result.unwrap() && !is_ignored.unwrap()))
+            {
+                result = is_ignored;
+                matched_rule = Some(rule);
             }
         }
 
