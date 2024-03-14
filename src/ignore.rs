@@ -119,7 +119,7 @@ pub fn is_ignored(file_path: &path::Path) -> Result<RGitIgnoreResult> {
         let rgitignore_path = cur_dir.join(".rgitignore");
 
         let mut rules = vec![RGitIgnoreRule {
-            rule: "*.rgit".to_string(),
+            rule: ".rgit".to_string(),
             rgitignore_path: rgitignore_path.clone(),
             line_number: 0,
         }];
