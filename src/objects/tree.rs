@@ -208,20 +208,23 @@ impl RGitObject for Tree {
         Ok(())
     }
 
-    fn print_object(&self, _rgit_dir: &Path) -> Result<()> {
+    fn serialize_object(&self, _rgit_dir: &Path, writer: &mut dyn Write) -> Result<()> {
         for (name, tree_entry) in &self.entries {
             let rgit_object_type = match tree_entry.rgit_object.header()? {
                 RGitObjectHeader { object_type, .. } => object_type,
             };
             let rgit_object_hash = tree_entry.rgit_object.hash()?;
 
-            println!(
-                "{} {} {}\t{}",
-                tree_entry.entry_type.as_str(),
-                rgit_object_type,
-                hex::encode(rgit_object_hash),
-                name,
-            );
+            writer.write_all(
+                format!(
+                    "{} {} {}\t{}\n",
+                    tree_entry.entry_type.as_str(),
+                    rgit_object_type,
+                    hex::encode(rgit_object_hash),
+                    name
+                )
+                .as_bytes(),
+            )?;
         }
 
         Ok(())

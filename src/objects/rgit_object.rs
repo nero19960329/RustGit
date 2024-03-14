@@ -69,7 +69,7 @@ pub trait RGitObject {
     fn hash(&self) -> Result<&[u8; 20]>;
     fn write(&self, rgit_dir: &path::Path) -> Result<()>;
     fn write_object(&self, rgit_dir: &path::Path) -> Result<()>;
-    fn print_object(&self, rgit_dir: &path::Path) -> Result<()>;
+    fn serialize_object(&self, rgit_dir: &path::Path, writer: &mut dyn io::Write) -> Result<()>;
 }
 
 pub fn rgit_object_from_hash(
