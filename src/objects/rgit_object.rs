@@ -88,13 +88,13 @@ pub fn rgit_object_from_hash(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::utils::init_rgit_dir;
     use tempfile::tempdir;
 
     #[test]
     fn test_rgit_object_from_hash() {
         let dir = tempdir().unwrap();
-        let rgit_dir = dir.path().join(".rgit");
-        fs::create_dir(&rgit_dir).unwrap();
+        let rgit_dir = init_rgit_dir(dir.path()).unwrap();
 
         fs::write(dir.path().join("file.txt"), "Hello, world!").unwrap();
         fs::create_dir_all(dir.path().join("subdir")).unwrap();

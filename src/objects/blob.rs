@@ -96,6 +96,7 @@ impl RGitObject for Blob {
 mod tests {
     use super::*;
     use crate::objects::Tree;
+    use crate::utils::init_rgit_dir;
     use tempfile::tempdir;
 
     #[test]
@@ -117,8 +118,7 @@ mod tests {
     #[test]
     fn test_blob_from_hash() {
         let dir = tempdir().unwrap();
-        let rgit_dir = dir.path().join(".rgit");
-        fs::create_dir_all(rgit_dir).unwrap();
+        init_rgit_dir(dir.path()).unwrap();
 
         fs::write(dir.path().join("test.txt"), "Hello, World!").unwrap();
         let blob = Blob::from_path(dir.path().join("test.txt").as_path()).unwrap();
@@ -141,8 +141,7 @@ mod tests {
     #[test]
     fn test_blob_write() {
         let dir = tempdir().unwrap();
-        let rgit_dir = dir.path().join(".rgit");
-        fs::create_dir_all(rgit_dir).unwrap();
+        init_rgit_dir(dir.path()).unwrap();
 
         fs::write(dir.path().join("test.txt"), "Hello, World!").unwrap();
         let blob = Blob::from_path(dir.path().join("test.txt").as_path()).unwrap();
@@ -159,8 +158,7 @@ mod tests {
     #[test]
     fn test_blob_serialize() {
         let dir = tempdir().unwrap();
-        let rgit_dir = dir.path().join(".rgit");
-        fs::create_dir_all(rgit_dir).unwrap();
+        init_rgit_dir(dir.path()).unwrap();
 
         fs::write(dir.path().join("test.txt"), "Hello, World!").unwrap();
         let blob = Blob::from_path(dir.path().join("test.txt").as_path()).unwrap();

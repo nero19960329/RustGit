@@ -234,6 +234,7 @@ impl RGitObject for Tree {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::utils::init_rgit_dir;
     use std::fs;
     use tempfile::tempdir;
 
@@ -241,8 +242,7 @@ mod tests {
     fn test_tree_from_path() {
         let dir = tempdir().unwrap();
         let path = dir.path();
-        let rgit_dir = path.join(".rgit");
-        fs::create_dir(&rgit_dir).unwrap();
+        init_rgit_dir(path).unwrap();
 
         let file_path = path.join("file");
         fs::write(&file_path, "file content").unwrap();
@@ -260,8 +260,7 @@ mod tests {
     fn test_tree_from_hash() {
         let dir = tempdir().unwrap();
         let path = dir.path();
-        let rgit_dir = path.join(".rgit");
-        fs::create_dir(&rgit_dir).unwrap();
+        let rgit_dir = init_rgit_dir(path).unwrap();
 
         let file_path = path.join("file");
         fs::write(&file_path, "file content").unwrap();
@@ -282,8 +281,7 @@ mod tests {
     fn test_tree_serialize_object() {
         let dir = tempdir().unwrap();
         let path = dir.path();
-        let rgit_dir = path.join(".rgit");
-        fs::create_dir(&rgit_dir).unwrap();
+        let rgit_dir = init_rgit_dir(path).unwrap();
 
         let file_path = path.join("file");
         fs::write(&file_path, "file content").unwrap();

@@ -3,6 +3,14 @@ use anyhow::Result;
 use std::fs;
 use std::path::{Path, PathBuf};
 
+pub fn init_rgit_dir(root: &Path) -> Result<PathBuf> {
+    let rgit_dir = root.join(".rgit");
+    if fs::metadata(&rgit_dir).is_err() {
+        fs::create_dir(&rgit_dir)?;
+    }
+    Ok(rgit_dir)
+}
+
 pub fn get_rgit_dir(dir: &Path) -> Result<PathBuf> {
     let mut dir = dir.to_path_buf();
     if dir.is_file() {
@@ -65,8 +73,7 @@ mod tests {
             .to_string()
             .contains("not a rgit repository"));
 
-        let rgit_dir = temp_dir.path().join(".rgit");
-        fs::create_dir(&rgit_dir).unwrap();
+        let rgit_dir = init_rgit_dir(temp_dir.path()).unwrap();
         let result = get_rgit_dir(temp_dir.path());
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), rgit_dir);
