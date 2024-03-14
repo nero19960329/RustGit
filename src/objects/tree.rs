@@ -230,3 +230,72 @@ impl RGitObject for Tree {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+    use tempfile::tempdir;
+
+    #[test]
+    fn test_tree_from_path() {
+        let dir = tempdir().unwrap();
+        let path = dir.path();
+        let rgit_dir = path.join(".rgit");
+        fs::create_dir(&rgit_dir).unwrap();
+
+        let file_path = path.join("file");
+        fs::write(&file_path, "file content").unwrap();
+
+        let subdir_path = path.join("dir");
+        fs::create_dir(&subdir_path).unwrap();
+        let subfile_path = subdir_path.join("subfile");
+        fs::write(&subfile_path, "subfile content").unwrap();
+
+        let tree = Tree::from_path(path).unwrap();
+        assert_eq!(tree.entries.len(), 2);
+    }
+
+    #[test]
+    fn test_tree_from_hash() {
+        let dir = tempdir().unwrap();
+        let path = dir.path();
+        let rgit_dir = path.join(".rgit");
+        fs::create_dir(&rgit_dir).unwrap();
+
+        let file_path = path.join("file");
+        fs::write(&file_path, "file content").unwrap();
+
+        let subdir_path = path.join("dir");
+        fs::create_dir(&subdir_path).unwrap();
+        let subfile_path = subdir_path.join("subfile");
+        fs::write(&subfile_path, "subfile content").unwrap();
+
+        let tree = Tree::from_path(path).unwrap();
+        tree.write_object(rgit_dir.as_path()).unwrap();
+
+        let tree = Tree::from_hash(rgit_dir.as_path(), *tree.hash().unwrap()).unwrap();
+        assert_eq!(tree.entries.len(), 2);
+    }
+
+    #[test]
+    fn test_tree_serialize_object() {
+        let dir = tempdir().unwrap();
+        let path = dir.path();
+        let rgit_dir = path.join(".rgit");
+        fs::create_dir(&rgit_dir).unwrap();
+
+        let file_path = path.join("file");
+        fs::write(&file_path, "file content").unwrap();
+
+        let subdir_path = path.join("dir");
+        fs::create_dir(&subdir_path).unwrap();
+        let subfile_path = subdir_path.join("subfile");
+        fs::write(&subfile_path, "subfile content").unwrap();
+
+        let tree = Tree::from_path(path).unwrap();
+        let mut buffer = Vec::new();
+        tree.serialize_object(rgit_dir.as_path(), &mut buffer)
+            .unwrap();
+    }
+}

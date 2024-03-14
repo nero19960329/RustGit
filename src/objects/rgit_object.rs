@@ -84,3 +84,31 @@ pub fn rgit_object_from_hash(
         RGitObjectType::Blob => Ok(Box::new(Blob::from_hash(rgit_dir, hash.clone())?)),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tempfile::tempdir;
+
+    #[test]
+    fn test_rgit_object_from_hash() {
+        let dir = tempdir().unwrap();
+        let rgit_dir = dir.path().join(".rgit");
+        fs::create_dir(&rgit_dir).unwrap();
+
+        fs::write(dir.path().join("file.txt"), "Hello, world!").unwrap();
+        fs::create_dir_all(dir.path().join("subdir")).unwrap();
+        fs::write(dir.path().join("subdir/file.txt"), "Hello, world!").unwrap();
+
+        let tree = Tree::from_path(&dir.path()).unwrap();
+        tree.write_object(rgit_dir.as_path()).unwrap();
+
+        let blob = Blob::from_path(&dir.path().join("file.txt")).unwrap();
+
+        let tree = rgit_object_from_hash(rgit_dir.as_path(), tree.hash().unwrap()).unwrap();
+        assert_eq!(tree.header().unwrap().object_type, RGitObjectType::Tree);
+
+        let blob = rgit_object_from_hash(rgit_dir.as_path(), blob.hash().unwrap()).unwrap();
+        assert_eq!(blob.header().unwrap().object_type, RGitObjectType::Blob);
+    }
+}

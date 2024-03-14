@@ -91,3 +91,83 @@ impl RGitObject for Blob {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::objects::Tree;
+    use tempfile::tempdir;
+
+    #[test]
+    fn test_blob_from_path() {
+        let dir = tempdir().unwrap();
+
+        let result = Blob::from_path(dir.path().join("test.txt").as_path());
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("No such file or directory"));
+
+        fs::write(dir.path().join("test.txt"), "Hello, World!").unwrap();
+        let blob = Blob::from_path(dir.path().join("test.txt").as_path()).unwrap();
+        assert_eq!(blob.size, 13);
+    }
+
+    #[test]
+    fn test_blob_from_hash() {
+        let dir = tempdir().unwrap();
+        let rgit_dir = dir.path().join(".rgit");
+        fs::create_dir_all(rgit_dir).unwrap();
+
+        fs::write(dir.path().join("test.txt"), "Hello, World!").unwrap();
+        let blob = Blob::from_path(dir.path().join("test.txt").as_path()).unwrap();
+        blob.write_object(dir.path()).unwrap();
+
+        let blob = Blob::from_hash(dir.path(), *blob.hash().unwrap()).unwrap();
+        assert_eq!(blob.size, 13);
+
+        let tree = Tree::from_path(dir.path()).unwrap();
+        tree.write_object(dir.path()).unwrap();
+
+        let result = Blob::from_hash(dir.path(), *tree.hash().unwrap());
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Invalid object type"));
+    }
+
+    #[test]
+    fn test_blob_write() {
+        let dir = tempdir().unwrap();
+        let rgit_dir = dir.path().join(".rgit");
+        fs::create_dir_all(rgit_dir).unwrap();
+
+        fs::write(dir.path().join("test.txt"), "Hello, World!").unwrap();
+        let blob = Blob::from_path(dir.path().join("test.txt").as_path()).unwrap();
+        blob.write_object(dir.path()).unwrap();
+
+        fs::remove_file(dir.path().join("test.txt")).unwrap();
+        blob.write(dir.path()).unwrap();
+        assert_eq!(
+            fs::read_to_string(dir.path().join("test.txt")).unwrap(),
+            "Hello, World!"
+        );
+    }
+
+    #[test]
+    fn test_blob_serialize() {
+        let dir = tempdir().unwrap();
+        let rgit_dir = dir.path().join(".rgit");
+        fs::create_dir_all(rgit_dir).unwrap();
+
+        fs::write(dir.path().join("test.txt"), "Hello, World!").unwrap();
+        let blob = Blob::from_path(dir.path().join("test.txt").as_path()).unwrap();
+        blob.write_object(dir.path()).unwrap();
+
+        let mut buffer = Vec::new();
+        blob.serialize_object(dir.path(), &mut buffer).unwrap();
+        assert_eq!(buffer, "Hello, World!".as_bytes(),)
+    }
+}
