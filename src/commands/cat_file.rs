@@ -37,12 +37,8 @@ fn cat_file(
 ) -> Result<()> {
     let rgit_dir = get_rgit_dir(dir)?;
     let mut hash_array = [0; 20];
-    hex::decode_to_slice(&object, &mut hash_array).map_err(|_| {
-        RGitError::new(
-            format!("fatal: Not a valid object name {}", object),
-            128,
-        )
-    })?;
+    hex::decode_to_slice(&object, &mut hash_array)
+        .map_err(|_| RGitError::new(format!("fatal: Not a valid object name {}", object), 128))?;
 
     let rgit_object = rgit_object_from_hash(rgit_dir.as_path(), &hash_array)?;
     if t {
@@ -94,7 +90,8 @@ mod tests {
             false,
             true,
             &mut buffer,
-        ).unwrap();
+        )
+        .unwrap();
 
         assert_eq!(buffer, b"Hello, World!");
     }
