@@ -27,12 +27,9 @@ impl Blob {
             ));
         }
 
-        let size = fs::metadata(path)?.len() as usize;
-        let header = RGitObjectHeader::new(RGitObjectType::Blob, size);
-
         Ok(Blob {
             path: Some(path.to_path_buf()),
-            hash: hash(vec![header.serialize().as_slice(), &fs::read(path)?].into_iter())?,
+            hash: hash(vec![fs::File::open(path)?].into_iter())?,
             size: fs::metadata(&path)?.len() as usize,
         })
     }

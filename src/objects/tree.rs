@@ -107,14 +107,9 @@ impl Tree {
             );
         }
 
-        let header = RGitObjectHeader {
-            object_type: RGitObjectType::Tree,
-            size: content.len(),
-        };
-
         Ok(Self {
             path: Some(path.to_path_buf()),
-            hash: hash(vec![header.serialize().as_slice(), content.as_slice()].into_iter())?,
+            hash: hash(vec![content.as_slice()].into_iter())?,
             entries: entries,
             content: content,
         })
