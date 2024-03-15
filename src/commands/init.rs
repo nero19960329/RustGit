@@ -3,7 +3,7 @@ use anyhow::Result;
 use std::env;
 use std::fs;
 
-pub fn rgit_init() -> Result<()> {
+pub fn rgit_init() -> Result<u8> {
     let dir = env::current_dir()?;
     let rgit_dir_exist = fs::metadata(&dir.join(".rgit")).is_ok();
     let rgit_dir = init_rgit_dir(&dir)?;
@@ -19,5 +19,5 @@ pub fn rgit_init() -> Result<()> {
         );
     }
 
-    Ok(())
+    Ok(0)
 }

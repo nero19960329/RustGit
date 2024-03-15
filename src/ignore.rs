@@ -118,13 +118,9 @@ pub fn is_ignored(file_path: &path::Path) -> Result<RGitIgnoreResult> {
     loop {
         let rgitignore_path = cur_dir.join(".rgitignore");
 
-        let mut rules = vec![RGitIgnoreRule {
-            rule: ".rgit".to_string(),
-            rgitignore_path: rgitignore_path.clone(),
-            line_number: 0,
-        }];
+        let mut rules: Vec<RGitIgnoreRule> = Vec::new();
         if rgitignore_path.is_file() {
-            rules.append(&mut load_ignore_rules(&rgitignore_path)?);
+            rules = load_ignore_rules(&rgitignore_path)?;
         }
 
         for rule in rules {

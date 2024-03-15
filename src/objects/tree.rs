@@ -78,6 +78,11 @@ impl Tree {
         for entry in fs::read_dir(path)? {
             let entry = entry?;
             let entry_path = entry.path();
+
+            // ignore .rgit directory
+            if entry_path.ends_with(".rgit") {
+                continue;
+            }
             if is_ignored(&entry_path)?.is_ignored {
                 continue;
             };
