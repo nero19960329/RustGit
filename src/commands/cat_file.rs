@@ -75,25 +75,69 @@ mod tests {
     #[test]
     fn test_cat_file() {
         let dir = tempdir().unwrap();
+
+        // test under an un-initialized repository
+        let mut buffer = Vec::new();
+        let result = cat_file(
+            dir.path(),
+            "invalid_hash".to_string(),
+            false,
+            false,
+            true,
+            &mut buffer,
+        );
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("fatal: not a rgit repository"));
+
         let rgit_dir = init_rgit_dir(dir.path()).unwrap();
 
-        fs::write(rgit_dir.join("test.txt"), "Hello, World!").unwrap();
-
-        let blob = Blob::from_path(rgit_dir.join("test.txt").as_path()).unwrap();
-        blob.write_object(rgit_dir.as_path()).unwrap();
+        let file_path = dir.path().join("test.txt");
+        let content = "Hello, World!";
+        fs::write(&file_path, content).unwrap();
+        let blob = Blob::from_path(&file_path).unwrap();
         let hash = blob.hash().unwrap();
+        blob.write_object(rgit_dir.as_path()).unwrap();
 
         let mut buffer = Vec::new();
-        cat_file(
-            rgit_dir.as_path(),
+        let result = cat_file(
+            dir.path(),
             hex::encode(hash),
             false,
             false,
             true,
             &mut buffer,
-        )
-        .unwrap();
+        );
+        assert!(result.is_ok());
+        assert_eq!(String::from_utf8(buffer).unwrap(), content);
 
-        assert_eq!(buffer, b"Hello, World!");
+        let mut buffer = Vec::new();
+        let result = cat_file(
+            dir.path(),
+            hex::encode(hash),
+            true,
+            false,
+            false,
+            &mut buffer,
+        );
+        assert!(result.is_ok());
+        assert_eq!(String::from_utf8(buffer).unwrap().trim(), "blob");
+
+        let mut buffer = Vec::new();
+        let result = cat_file(
+            dir.path(),
+            hex::encode(hash),
+            false,
+            true,
+            false,
+            &mut buffer,
+        );
+        assert!(result.is_ok());
+        assert_eq!(
+            String::from_utf8(buffer).unwrap().trim(),
+            content.len().to_string()
+        );
     }
 }
