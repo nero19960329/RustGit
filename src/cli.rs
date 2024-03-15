@@ -1,4 +1,4 @@
-use super::commands::{CatFileArgs, HashObjectArgs};
+use super::commands::{CatFileArgs, CheckIgnoreArgs, HashObjectArgs};
 use clap::{Parser, Subcommand};
 
 #[derive(Parser, Debug)]
@@ -21,4 +21,7 @@ pub enum RustGitSubCommands {
 
     #[clap(name = "write-tree")]
     WriteTree,
+
+    #[clap(name = "check-ignore")]
+    CheckIgnore(CheckIgnoreArgs),
 }
