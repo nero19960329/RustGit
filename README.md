@@ -31,14 +31,13 @@ You can explore other commands by running:
 cargo run -- <command>
 ```
 
-Replace `<command>` with `write-tree`, `cat-file`, or `hash-object` to use the respective functionalities.
-
 ## Features
 
 - `init`: Initialize a new repo.
 - `write-tree`: Write the contents of the index to the object database as a tree.
 - `cat-file`: Provide content or type and size information for repository objects.
 - `hash-object`: Compute object ID and optionally creates a blob from a file.
+- `check-ignore`: Check if a file is ignored by `.rgitignore`.
 
 ## References
 
