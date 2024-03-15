@@ -52,7 +52,7 @@ fn cat_file(
     Ok(())
 }
 
-pub fn rgit_cat_file(args: &CatFileArgs) -> Result<()> {
+pub fn rgit_cat_file(args: &CatFileArgs) -> Result<u8> {
     cat_file(
         env::current_dir()?.as_path(),
         args.object.clone(),
@@ -60,7 +60,8 @@ pub fn rgit_cat_file(args: &CatFileArgs) -> Result<()> {
         args.s,
         args.p,
         &mut io::stdout(),
-    )
+    )?;
+    Ok(0)
 }
 
 #[cfg(test)]

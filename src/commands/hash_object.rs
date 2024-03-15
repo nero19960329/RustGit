@@ -14,7 +14,7 @@ pub struct HashObjectArgs {
     pub file: String,
 }
 
-pub fn rgit_hash_object(args: &HashObjectArgs) -> Result<()> {
+pub fn rgit_hash_object(args: &HashObjectArgs) -> Result<u8> {
     let file = env::current_dir()?.join(&args.file);
     let blob = Blob::from_path(&file)?;
     let hash = blob.hash()?;
@@ -23,5 +23,5 @@ pub fn rgit_hash_object(args: &HashObjectArgs) -> Result<()> {
         blob.write_object(rgit_dir.as_path())?;
     }
     println!("{}", hex::encode(hash));
-    Ok(())
+    Ok(0)
 }

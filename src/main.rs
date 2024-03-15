@@ -38,4 +38,5 @@ fn main() {
             }
         }
     }
+    process::exit(result.unwrap().into());
 }
