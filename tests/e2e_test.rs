@@ -73,4 +73,19 @@ fn test_rgit_end_to_end() {
     assert!(tree_content.contains("test.txt"));
     assert!(tree_content.contains("040000 tree"));
     assert!(tree_content.contains("subdir"));
+
+    rgit_command()
+        .current_dir(dir.path())
+        .args(["read-tree", tree_hash])
+        .assert()
+        .success();
+
+    assert_eq!(
+        fs::read_to_string(dir.path().join("test.txt")).unwrap(),
+        "Hello, World!"
+    );
+    assert_eq!(
+        fs::read_to_string(dir.path().join("subdir/subfile.txt")).unwrap(),
+        "Subdir file content"
+    );
 }
