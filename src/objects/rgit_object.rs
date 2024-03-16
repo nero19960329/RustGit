@@ -67,7 +67,7 @@ impl RGitObjectHeader {
 pub trait RGitObject {
     fn header(&self) -> Result<RGitObjectHeader>;
     fn hash(&self) -> Result<&[u8; 20]>;
-    fn write(&self, rgit_dir: &path::Path) -> Result<()>;
+    fn write(&self, rgit_dir: &path::Path, path: &path::Path) -> Result<()>;
     fn write_object(&self, rgit_dir: &path::Path) -> Result<()>;
     fn serialize_object(&self, rgit_dir: &path::Path, writer: &mut dyn io::Write) -> Result<()>;
 }

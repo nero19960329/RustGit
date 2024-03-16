@@ -8,7 +8,7 @@ use std::collections::BTreeMap;
 use std::fs;
 use std::io::{BufRead, BufReader, Read, Write};
 use std::os::unix::fs::PermissionsExt;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 #[derive(Debug, PartialEq)]
 pub enum EntryType {
@@ -62,8 +62,6 @@ struct TreeEntry {
 }
 
 pub struct Tree {
-    #[allow(dead_code)]
-    path: Option<PathBuf>,
     hash: [u8; 20],
 
     entries: BTreeMap<String, TreeEntry>,
@@ -113,7 +111,6 @@ impl Tree {
         }
 
         Ok(Self {
-            path: Some(path.to_path_buf()),
             hash: hash(vec![content.as_slice()].into_iter())?,
             entries: entries,
             content: content,
@@ -174,7 +171,6 @@ impl Tree {
         }
 
         Ok(Self {
-            path: None,
             hash: hash.clone(),
             entries: entries,
             content: buffer,
@@ -194,8 +190,13 @@ impl RGitObject for Tree {
         Ok(&self.hash)
     }
 
-    fn write(&self, _rgit_dir: &Path) -> Result<()> {
-        unimplemented!()
+    fn write(&self, rgit_dir: &Path, path: &Path) -> Result<()> {
+        fs::create_dir_all(path)?;
+        for (name, tree_entry) in &self.entries {
+            tree_entry.rgit_object.write(rgit_dir, &path.join(name))?;
+        }
+
+        Ok(())
     }
 
     fn write_object(&self, rgit_dir: &Path) -> Result<()> {
