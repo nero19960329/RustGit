@@ -1,4 +1,4 @@
-use super::commands::{CatFileArgs, CheckIgnoreArgs, HashObjectArgs};
+use super::commands::{CatFileArgs, CheckIgnoreArgs, HashObjectArgs, ReadTreeArgs};
 use clap::{Parser, Subcommand};
 
 #[derive(Parser, Debug)]
@@ -24,4 +24,7 @@ pub enum RustGitSubCommands {
 
     #[clap(name = "check-ignore")]
     CheckIgnore(CheckIgnoreArgs),
+
+    #[clap(name = "read-tree")]
+    ReadTree(ReadTreeArgs),
 }

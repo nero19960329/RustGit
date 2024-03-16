@@ -8,7 +8,9 @@ mod utils;
 
 use clap::Parser;
 use cli::{RustGitArgs, RustGitSubCommands};
-use commands::{rgit_cat_file, rgit_check_ignore, rgit_hash_object, rgit_init, rgit_write_tree};
+use commands::{
+    rgit_cat_file, rgit_check_ignore, rgit_hash_object, rgit_init, rgit_read_tree, rgit_write_tree,
+};
 use error::RGitError;
 use std::process;
 
@@ -21,6 +23,7 @@ fn main() {
         Some(RustGitSubCommands::CatFile(args)) => rgit_cat_file(args),
         Some(RustGitSubCommands::WriteTree) => rgit_write_tree(),
         Some(RustGitSubCommands::CheckIgnore(args)) => rgit_check_ignore(args),
+        Some(RustGitSubCommands::ReadTree(args)) => rgit_read_tree(args),
         None => Err(RGitError::new(
             "fatal: no command provided".to_string(),
             128,

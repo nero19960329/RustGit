@@ -57,8 +57,7 @@ impl RGitObject for Blob {
         Ok(&self.hash)
     }
 
-    fn write(&self, rgit_dir: &Path) -> Result<()> {
-        let path = self.path.as_ref().unwrap();
+    fn write(&self, rgit_dir: &Path, path: &Path) -> Result<()> {
         let object_path = get_rgit_object_path(rgit_dir, self.hash()?, true)?;
 
         fs::create_dir_all(path.parent().unwrap())?;
@@ -148,7 +147,8 @@ mod tests {
         blob.write_object(dir.path()).unwrap();
 
         fs::remove_file(dir.path().join("test.txt")).unwrap();
-        blob.write(dir.path()).unwrap();
+        blob.write(dir.path(), dir.path().join("test.txt").as_path())
+            .unwrap();
         assert_eq!(
             fs::read_to_string(dir.path().join("test.txt")).unwrap(),
             "Hello, World!"

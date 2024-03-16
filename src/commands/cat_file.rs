@@ -1,4 +1,4 @@
-use super::super::error::RGitError;
+use super::super::hash::hash_array_from_string;
 use super::super::objects::rgit_object_from_hash;
 use super::super::utils::get_rgit_dir;
 use anyhow::Result;
@@ -34,11 +34,9 @@ fn cat_file(
     s: bool,
     p: bool,
     writer: &mut dyn io::Write,
-) -> Result<()> {
+) -> Result<u8> {
     let rgit_dir = get_rgit_dir(dir)?;
-    let mut hash_array = [0; 20];
-    hex::decode_to_slice(&object, &mut hash_array)
-        .map_err(|_| RGitError::new(format!("fatal: Not a valid object name {}", object), 128))?;
+    let hash_array = hash_array_from_string(&object)?;
 
     let rgit_object = rgit_object_from_hash(rgit_dir.as_path(), &hash_array)?;
     if t {
@@ -49,7 +47,7 @@ fn cat_file(
         rgit_object.serialize_object(rgit_dir.as_path(), writer)?;
     }
 
-    Ok(())
+    Ok(0)
 }
 
 pub fn rgit_cat_file(args: &CatFileArgs) -> Result<u8> {
@@ -60,8 +58,7 @@ pub fn rgit_cat_file(args: &CatFileArgs) -> Result<u8> {
         args.s,
         args.p,
         &mut io::stdout(),
-    )?;
-    Ok(0)
+    )
 }
 
 #[cfg(test)]

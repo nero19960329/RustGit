@@ -38,6 +38,7 @@ cargo run -- <command>
 - `cat-file`: Provide content or type and size information for repository objects.
 - `hash-object`: Compute object ID and optionally creates a blob from a file.
 - `check-ignore`: Check if a file is ignored by `.rgitignore`.
+- `read-tree`: Read a tree object into the current index.
 
 ## References
 
