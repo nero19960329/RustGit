@@ -5,6 +5,7 @@ use super::blob::Blob;
 use super::rgit_object::{RGitObject, RGitObjectHeader, RGitObjectType};
 use anyhow::{anyhow, Result};
 use std::collections::BTreeMap;
+use std::fmt;
 use std::fs;
 use std::io::{BufRead, BufReader, Read, Write};
 use std::os::unix::fs::PermissionsExt;
@@ -178,6 +179,28 @@ impl Tree {
     }
 }
 
+impl fmt::Display for Tree {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        for (name, tree_entry) in &self.entries {
+            let rgit_object_type = match tree_entry.rgit_object.header().unwrap() {
+                RGitObjectHeader { object_type, .. } => object_type,
+            };
+            let rgit_object_hash = tree_entry.rgit_object.hash().unwrap();
+
+            write!(
+                f,
+                "{} {} {}\t{}\n",
+                tree_entry.entry_type.as_str(),
+                rgit_object_type,
+                hex::encode(rgit_object_hash),
+                name
+            )?;
+        }
+
+        Ok(())
+    }
+}
+
 impl RGitObject for Tree {
     fn header(&self) -> Result<RGitObjectHeader> {
         Ok(RGitObjectHeader {
@@ -214,25 +237,13 @@ impl RGitObject for Tree {
         Ok(())
     }
 
+    fn serialize(&self, writer: &mut dyn Write) -> Result<()> {
+        write!(writer, "{}", self)?;
+        Ok(())
+    }
+
     fn serialize_object(&self, _rgit_dir: &Path, writer: &mut dyn Write) -> Result<()> {
-        for (name, tree_entry) in &self.entries {
-            let rgit_object_type = match tree_entry.rgit_object.header()? {
-                RGitObjectHeader { object_type, .. } => object_type,
-            };
-            let rgit_object_hash = tree_entry.rgit_object.hash()?;
-
-            writer.write_all(
-                format!(
-                    "{} {} {}\t{}\n",
-                    tree_entry.entry_type.as_str(),
-                    rgit_object_type,
-                    hex::encode(rgit_object_hash),
-                    name
-                )
-                .as_bytes(),
-            )?;
-        }
-
+        write!(writer, "{}", self)?;
         Ok(())
     }
 }

@@ -1,4 +1,5 @@
 mod blob;
+mod commit;
 mod rgit_object;
 mod tree;
 

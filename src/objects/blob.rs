@@ -82,6 +82,16 @@ impl RGitObject for Blob {
         Ok(())
     }
 
+    fn serialize(&self, writer: &mut dyn Write) -> Result<()> {
+        if self.path.is_none() {
+            return Err(anyhow!("Cannot serialize blob without path"))
+        }
+        let path = self.path.as_ref().unwrap();
+        let mut file = fs::File::open(path)?;
+        io::copy(&mut file, writer)?;
+        Ok(())
+    }
+
     fn serialize_object(&self, rgit_dir: &Path, writer: &mut dyn Write) -> Result<()> {
         let object_path = get_rgit_object_path(rgit_dir, self.hash()?, true)?;
         let mut file = fs::File::open(&object_path)?;
