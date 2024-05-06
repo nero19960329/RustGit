@@ -15,3 +15,5 @@ Cargo.lock
 
 # For Git
 .git
+
+repo-summarizer.config.yaml

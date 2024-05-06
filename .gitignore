@@ -15,3 +15,5 @@ Cargo.lock
 
 # For RGit
 .rgit
+
+repo-summarizer.config.yaml
