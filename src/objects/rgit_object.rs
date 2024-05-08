@@ -85,8 +85,6 @@ pub trait RGitObject {
     fn object_type(&self) -> RGitObjectType;
     fn size(&self) -> usize;
 
-    fn hash(&self) -> &[u8; 20];
-
     fn serialize(&self, writer: &mut dyn Write) -> Result<()>;
     fn print(&self, writer: &mut dyn Write) -> Result<()>;
 }

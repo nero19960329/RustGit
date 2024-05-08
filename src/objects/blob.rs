@@ -76,6 +76,10 @@ impl Blob {
         Ok(file.take(self.size as u64))
     }
 
+    pub fn hash(&self) -> &[u8; 20] {
+        &self.hash
+    }
+
     pub fn write_to_file(&self, path: &Path) -> Result<()> {
         let mut src = self.content()?;
         let mut dst = fs::File::create(path)?;
@@ -99,10 +103,6 @@ impl RGitObject for Blob {
 
     fn size(&self) -> usize {
         self.size
-    }
-
-    fn hash(&self) -> &[u8; 20] {
-        &self.hash
     }
 
     fn serialize(&self, writer: &mut dyn Write) -> Result<()> {

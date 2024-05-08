@@ -64,7 +64,7 @@ pub fn rgit_cat_file(args: &CatFileArgs) -> Result<u8> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::objects::{Blob, RGitObject};
+    use crate::objects::Blob;
     use crate::utils::init_rgit_dir;
     use std::fs;
     use tempfile::tempdir;

@@ -1,4 +1,4 @@
-use crate::objects::{RGitObject, Tree};
+use crate::objects::Tree;
 use crate::utils::get_rgit_dir;
 use anyhow::Result;
 use std::env;
@@ -22,7 +22,7 @@ pub fn rgit_write_tree() -> Result<u8> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::objects::Tree;
+    use crate::objects::RGitObject;
     use crate::utils::init_rgit_dir;
     use std::fs;
     use tempfile::tempdir;

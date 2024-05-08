@@ -52,7 +52,6 @@ pub fn rgit_read_tree(args: &ReadTreeArgs) -> Result<u8> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::objects::RGitObject;
     use crate::utils::init_rgit_dir;
     use tempfile::tempdir;
 
