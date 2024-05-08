@@ -1,7 +1,7 @@
-use super::super::hash::hash_array_from_string;
-use super::super::ignore::is_ignored;
-use super::super::objects::{RGitObject, Tree};
-use super::super::utils::get_rgit_dir;
+use crate::hash::hash_array_from_string;
+use crate::ignore::is_ignored;
+use crate::objects::Tree;
+use crate::utils::get_rgit_dir;
 use anyhow::Result;
 use clap::Parser;
 use std::env;
@@ -39,9 +39,9 @@ fn empty_dir(dir: &path::Path) -> Result<()> {
 fn read_tree(dir: &path::Path, tree_ish: String) -> Result<u8> {
     let rgit_dir = get_rgit_dir(dir)?;
     let tree_hash_array = hash_array_from_string(&tree_ish)?;
-    let tree = Tree::from_hash(&rgit_dir, tree_hash_array)?;
+    let tree = Tree::from_rgit_objects(rgit_dir.as_path(), &tree_hash_array)?;
     empty_dir(dir)?;
-    tree.write(rgit_dir.as_path(), dir)?;
+    tree.write_to_directory(dir)?;
     Ok(0)
 }
 
@@ -52,6 +52,7 @@ pub fn rgit_read_tree(args: &ReadTreeArgs) -> Result<u8> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::objects::RGitObject;
     use crate::utils::init_rgit_dir;
     use tempfile::tempdir;
 
@@ -86,10 +87,10 @@ mod tests {
         let subfile_path = subdir_path.join("subfile");
         fs::write(&subfile_path, "subfile content").unwrap();
 
-        let tree = Tree::from_path(path).unwrap();
-        tree.write_object(rgit_dir.as_path()).unwrap();
+        let tree = Tree::from_directory(path).unwrap();
+        tree.write_to_rgit_objects(rgit_dir.as_path()).unwrap();
 
-        let result = read_tree(path, hex::encode(tree.hash().unwrap()));
+        let result = read_tree(path, hex::encode(tree.hash()));
         assert!(result.is_ok());
         assert_eq!(fs::read_to_string(&file_path).unwrap(), "file content");
         assert_eq!(

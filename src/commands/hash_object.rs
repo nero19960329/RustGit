@@ -1,8 +1,9 @@
-use super::super::objects::{Blob, RGitObject};
-use super::super::utils::get_rgit_dir;
+use crate::objects::{Blob, RGitObject};
+use crate::utils::{get_rgit_dir, get_rgit_object_path};
 use anyhow::Result;
 use clap::Parser;
 use std::env;
+use std::fs;
 use std::io;
 use std::path;
 
@@ -22,11 +23,14 @@ fn hash_object(
     write: bool,
     writer: &mut dyn io::Write,
 ) -> Result<u8> {
-    let blob = Blob::from_path(&file)?;
-    let hash = blob.hash()?;
+    let blob = Blob::from_file(&file)?;
+    let hash = blob.hash();
     if write {
-        let rgit_dir = get_rgit_dir(dir)?;
-        blob.write_object(rgit_dir.as_path())?;
+        let rgit_object_path = get_rgit_object_path(get_rgit_dir(dir)?.as_path(), hash, false)?;
+        fs::create_dir_all(rgit_object_path.parent().unwrap())?;
+        blob.serialize(&mut io::BufWriter::new(fs::File::create(
+            &rgit_object_path,
+        )?))?;
     }
     writeln!(writer, "{}", hex::encode(hash))?;
     Ok(0)

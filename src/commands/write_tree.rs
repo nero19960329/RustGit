@@ -1,5 +1,5 @@
-use super::super::objects::{RGitObject, Tree};
-use super::super::utils::get_rgit_dir;
+use crate::objects::{RGitObject, Tree};
+use crate::utils::get_rgit_dir;
 use anyhow::Result;
 use std::env;
 use std::io;
@@ -7,9 +7,9 @@ use std::path;
 
 fn write_tree(dir: &path::Path, writer: &mut dyn io::Write) -> Result<u8> {
     let rgit_dir = get_rgit_dir(dir)?;
-    let tree = Tree::from_path(dir)?;
-    let tree_hash = tree.hash()?;
-    tree.write_object(rgit_dir.as_path())?;
+    let tree = Tree::from_directory(dir)?;
+    let tree_hash = tree.hash();
+    tree.write_to_rgit_objects(rgit_dir.as_path())?;
 
     writeln!(writer, "{}", hex::encode(tree_hash))?;
     Ok(0)
@@ -51,9 +51,9 @@ mod tests {
         let mut tree_hash_array = [0; 20];
         tree_hash_array.copy_from_slice(&tree_hash);
 
-        let tree = Tree::from_hash(rgit_dir.as_path(), tree_hash_array).unwrap();
+        let tree = Tree::from_rgit_objects(rgit_dir.as_path(), &tree_hash_array).unwrap();
         let mut buffer = Vec::new();
-        tree.serialize_object(&rgit_dir, &mut buffer).unwrap();
+        tree.print(&mut buffer).unwrap();
         let tree_content = String::from_utf8(buffer).unwrap();
 
         assert!(tree_content.contains("100644 blob"));
@@ -74,11 +74,10 @@ mod tests {
         let mut subdir_tree_hash_array = [0; 20];
         subdir_tree_hash_array.copy_from_slice(&subdir_tree_hash);
 
-        let subdir_tree = Tree::from_hash(rgit_dir.as_path(), subdir_tree_hash_array).unwrap();
+        let subdir_tree =
+            Tree::from_rgit_objects(rgit_dir.as_path(), &subdir_tree_hash_array).unwrap();
         let mut buffer = Vec::new();
-        subdir_tree
-            .serialize_object(&rgit_dir, &mut buffer)
-            .unwrap();
+        subdir_tree.print(&mut buffer).unwrap();
         let subdir_tree_content = String::from_utf8(buffer).unwrap();
 
         assert!(subdir_tree_content.contains("100644 blob"));

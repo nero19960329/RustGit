@@ -1,6 +1,6 @@
-use super::super::hash::hash_array_from_string;
-use super::super::objects::rgit_object_from_hash;
-use super::super::utils::get_rgit_dir;
+use crate::hash::hash_array_from_string;
+use crate::objects::from_rgit_objects;
+use crate::utils::get_rgit_dir;
 use anyhow::Result;
 use clap::{ArgGroup, Parser};
 use std::env;
@@ -38,13 +38,13 @@ fn cat_file(
     let rgit_dir = get_rgit_dir(dir)?;
     let hash_array = hash_array_from_string(&object)?;
 
-    let rgit_object = rgit_object_from_hash(rgit_dir.as_path(), &hash_array)?;
+    let rgit_object = from_rgit_objects(rgit_dir.as_path(), &hash_array)?;
     if t {
-        writeln!(writer, "{}", rgit_object.header()?.object_type)?;
+        writeln!(writer, "{}", rgit_object.object_type())?;
     } else if s {
-        writeln!(writer, "{}", rgit_object.header()?.size)?;
+        writeln!(writer, "{}", rgit_object.size())?;
     } else if p {
-        rgit_object.serialize_object(rgit_dir.as_path(), writer)?;
+        rgit_object.print(writer)?;
     }
 
     Ok(0)
@@ -94,9 +94,9 @@ mod tests {
         let file_path = dir.path().join("test.txt");
         let content = "Hello, World!";
         fs::write(&file_path, content).unwrap();
-        let blob = Blob::from_path(&file_path).unwrap();
-        let hash = blob.hash().unwrap();
-        blob.write_object(rgit_dir.as_path()).unwrap();
+        let blob = Blob::from_file(&file_path).unwrap();
+        let hash = blob.hash();
+        blob.write_to_rgit_objects(rgit_dir.as_path()).unwrap();
 
         let mut buffer = Vec::new();
         let result = cat_file(
