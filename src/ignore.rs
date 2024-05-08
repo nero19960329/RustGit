@@ -6,7 +6,7 @@
 // If there is a separator at the beginning or middle (or both) of the pattern, then the pattern is relative to the directory level of the particular .gitignore file itself. Otherwise the pattern may also match at any level below the .gitignore level.
 // If there is a separator at the end of the pattern then the pattern will only match directories, otherwise the pattern can match both files and directories.
 // An asterisk "*" matches anything except a slash. The character "?" matches any one character except "/". The range notation, e.g. [a-zA-Z], can be used to match one of the characters in a range. See fnmatch(3) and the FNM_PATHNAME flag for a more detailed description.
-use super::utils::get_rgit_dir;
+use crate::utils::get_rgit_dir;
 use anyhow::Result;
 use regex::Regex;
 use std::fs;

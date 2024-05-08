@@ -1,4 +1,4 @@
-use super::commands::{CatFileArgs, CheckIgnoreArgs, HashObjectArgs, ReadTreeArgs};
+use crate::commands::{CatFileArgs, CheckIgnoreArgs, HashObjectArgs, ReadTreeArgs};
 use clap::{Parser, Subcommand};
 
 #[derive(Parser, Debug)]

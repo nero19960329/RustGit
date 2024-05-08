@@ -1,4 +1,4 @@
-use super::error::RGitError;
+use crate::error::RGitError;
 use anyhow::Result;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -111,7 +111,6 @@ mod tests {
         let object_path = objects_dir.join(&hash_str[..2]).join(&hash_str[2..]);
 
         let result = get_rgit_object_path(rgit_dir.as_path(), &hash, false);
-        println!("{:?}", result);
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), object_path);
 

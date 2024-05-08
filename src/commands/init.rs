@@ -1,4 +1,4 @@
-use super::super::utils::init_rgit_dir;
+use crate::utils::init_rgit_dir;
 use anyhow::Result;
 use std::env;
 use std::fs;

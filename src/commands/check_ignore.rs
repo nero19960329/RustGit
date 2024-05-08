@@ -1,4 +1,4 @@
-use super::super::ignore::is_ignored;
+use crate::ignore::is_ignored;
 use anyhow::Result;
 use clap::Parser;
 use std::env;
