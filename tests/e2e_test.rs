@@ -88,4 +88,14 @@ fn test_rgit_end_to_end() {
         fs::read_to_string(dir.path().join("subdir/subfile.txt")).unwrap(),
         "Subdir file content"
     );
+
+    let result = rgit_command()
+        .current_dir(dir.path())
+        .args(["commit", "-m", "Initial commit"])
+        .assert()
+        .success();
+
+    let commit_content = from_utf8(&result.get_output().stdout).unwrap().trim();
+    assert!(commit_content.starts_with("[commit"));
+    assert!(commit_content.contains("Initial commit"));
 }

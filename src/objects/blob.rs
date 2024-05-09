@@ -70,10 +70,14 @@ impl Blob {
         )
     }
 
-    pub fn content(&self) -> Result<impl Read> {
+    fn content(&self) -> Result<impl Read> {
         let mut file = fs::File::open(&self.path)?;
         file.seek(SeekFrom::Start(self.content_offset))?;
         Ok(file.take(self.size as u64))
+    }
+
+    pub fn hash(&self) -> &[u8; 20] {
+        &self.hash
     }
 
     pub fn write_to_file(&self, path: &Path) -> Result<()> {
@@ -87,7 +91,9 @@ impl Blob {
         let object_path = get_rgit_object_path(rgit_dir, &self.hash, false)?;
         fs::create_dir_all(object_path.parent().unwrap())?;
         let mut file = fs::File::create(&object_path)?;
+
         self.serialize(&mut file)?;
+
         Ok(())
     }
 }
@@ -99,10 +105,6 @@ impl RGitObject for Blob {
 
     fn size(&self) -> usize {
         self.size
-    }
-
-    fn hash(&self) -> &[u8; 20] {
-        &self.hash
     }
 
     fn serialize(&self, writer: &mut dyn Write) -> Result<()> {

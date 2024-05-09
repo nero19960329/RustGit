@@ -1,4 +1,4 @@
-use crate::commands::{CatFileArgs, CheckIgnoreArgs, HashObjectArgs, ReadTreeArgs};
+use crate::commands::{CatFileArgs, CheckIgnoreArgs, CommitArgs, HashObjectArgs, ReadTreeArgs};
 use clap::{Parser, Subcommand};
 
 #[derive(Parser, Debug)]
@@ -27,4 +27,7 @@ pub enum RustGitSubCommands {
 
     #[clap(name = "read-tree")]
     ReadTree(ReadTreeArgs),
+
+    #[clap(name = "commit")]
+    Commit(CommitArgs),
 }

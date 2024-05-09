@@ -1,4 +1,4 @@
-use crate::hash::hash_array_from_string;
+use crate::hash::hash_array_from_str;
 use crate::ignore::is_ignored;
 use crate::objects::Tree;
 use crate::utils::get_rgit_dir;
@@ -38,7 +38,7 @@ fn empty_dir(dir: &path::Path) -> Result<()> {
 
 fn read_tree(dir: &path::Path, tree_ish: String) -> Result<u8> {
     let rgit_dir = get_rgit_dir(dir)?;
-    let tree_hash_array = hash_array_from_string(&tree_ish)?;
+    let tree_hash_array = hash_array_from_str(&tree_ish)?;
     let tree = Tree::from_rgit_objects(rgit_dir.as_path(), &tree_hash_array)?;
     empty_dir(dir)?;
     tree.write_to_directory(dir)?;
@@ -52,7 +52,6 @@ pub fn rgit_read_tree(args: &ReadTreeArgs) -> Result<u8> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::objects::RGitObject;
     use crate::utils::init_rgit_dir;
     use tempfile::tempdir;
 

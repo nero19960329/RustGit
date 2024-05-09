@@ -1,4 +1,4 @@
-use crate::objects::{Blob, Tree};
+use crate::objects::{Blob, Commit, Tree};
 use crate::utils::get_rgit_object_path;
 use anyhow::Result;
 use std::fmt;
@@ -10,6 +10,7 @@ use std::path::Path;
 pub enum RGitObjectType {
     Blob,
     Tree,
+    Commit,
 }
 
 impl fmt::Display for RGitObjectType {
@@ -17,6 +18,7 @@ impl fmt::Display for RGitObjectType {
         match self {
             RGitObjectType::Blob => write!(f, "blob"),
             RGitObjectType::Tree => write!(f, "tree"),
+            RGitObjectType::Commit => write!(f, "commit"),
         }
     }
 }
@@ -26,11 +28,13 @@ impl RGitObjectType {
         match s {
             "blob" => Ok(RGitObjectType::Blob),
             "tree" => Ok(RGitObjectType::Tree),
+            "commit" => Ok(RGitObjectType::Commit),
             _ => Err(anyhow::anyhow!("Invalid object type: {:?}", s)),
         }
     }
 }
 
+#[derive(Debug)]
 pub struct RGitObjectHeader {
     pub object_type: RGitObjectType,
     pub content_size: usize,
@@ -85,8 +89,6 @@ pub trait RGitObject {
     fn object_type(&self) -> RGitObjectType;
     fn size(&self) -> usize;
 
-    fn hash(&self) -> &[u8; 20];
-
     fn serialize(&self, writer: &mut dyn Write) -> Result<()>;
     fn print(&self, writer: &mut dyn Write) -> Result<()>;
 }
@@ -99,6 +101,7 @@ pub fn from_rgit_objects(rgit_dir: &Path, hash: &[u8; 20]) -> Result<Box<dyn RGi
     match header.object_type {
         RGitObjectType::Blob => Ok(Box::new(Blob::from_rgit_objects(rgit_dir, hash)?)),
         RGitObjectType::Tree => Ok(Box::new(Tree::from_rgit_objects(rgit_dir, hash)?)),
+        RGitObjectType::Commit => Ok(Box::new(Commit::from_rgit_objects(rgit_dir, hash)?)),
     }
 }
 

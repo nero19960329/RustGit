@@ -216,6 +216,10 @@ impl Tree {
         Tree::new(entries)
     }
 
+    pub fn hash(&self) -> &[u8; 20] {
+        &self.hash
+    }
+
     pub fn write_to_rgit_objects(&self, rgit_dir: &Path) -> Result<()> {
         let object_path = get_rgit_object_path(rgit_dir, &self.hash, false)?;
         fs::create_dir_all(object_path.parent().unwrap())?;
@@ -248,10 +252,6 @@ impl RGitObject for Tree {
             size += entry.entry_type.to_string().len() + 1 + entry.name.len() + 1 + 20;
         }
         size
-    }
-
-    fn hash(&self) -> &[u8; 20] {
-        &self.hash
     }
 
     fn serialize(&self, writer: &mut dyn Write) -> Result<()> {
