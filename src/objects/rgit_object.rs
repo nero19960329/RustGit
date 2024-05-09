@@ -31,6 +31,7 @@ impl RGitObjectType {
     }
 }
 
+#[derive(Debug)]
 pub struct RGitObjectHeader {
     pub object_type: RGitObjectType,
     pub content_size: usize,
