@@ -58,12 +58,11 @@ fn commit(dir: &Path, message: String, writer: &mut dyn io::Write) -> Result<u8>
 
     set_head(&rgit_dir, &commit.hash()?)?;
 
-    writeln!(
-        writer,
-        "[commit {}] {}",
-        hex::encode(commit.hash()?),
-        message,
-    )?;
+    let commit_hash_prefix = hex::encode(commit.hash()?)
+        .chars()
+        .take(7)
+        .collect::<String>();
+    writeln!(writer, "[commit {}] {}", commit_hash_prefix, message,)?;
     // XXX: print the diff
 
     Ok(0)
