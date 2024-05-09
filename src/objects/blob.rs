@@ -70,7 +70,7 @@ impl Blob {
         )
     }
 
-    pub fn content(&self) -> Result<impl Read> {
+    fn content(&self) -> Result<impl Read> {
         let mut file = fs::File::open(&self.path)?;
         file.seek(SeekFrom::Start(self.content_offset))?;
         Ok(file.take(self.size as u64))
@@ -91,7 +91,9 @@ impl Blob {
         let object_path = get_rgit_object_path(rgit_dir, &self.hash, false)?;
         fs::create_dir_all(object_path.parent().unwrap())?;
         let mut file = fs::File::create(&object_path)?;
+
         self.serialize(&mut file)?;
+
         Ok(())
     }
 }
