@@ -43,7 +43,7 @@ pub fn hash_object<R: Read>(mut reader: R) -> Result<[u8; 20]> {
     Ok(hasher.finalize())
 }
 
-pub fn hash_array_from_string(hash: &str) -> Result<[u8; 20]> {
+pub fn hash_array_from_str(hash: &str) -> Result<[u8; 20]> {
     let mut hash_array = [0u8; 20];
     hex::decode_to_slice(hash, &mut hash_array)
         .map_err(|_| RGitError::new("fatal: Not a valid object name".to_string(), 128))?;
@@ -75,7 +75,7 @@ mod tests {
     }
 
     #[test]
-    fn test_hash_array_from_string() {
+    fn test_hash_array_from_str() {
         let command = process::Command::new("sh")
             .arg("-c")
             .arg("echo -n \"hello world\" | sha1sum | awk '{print $1}'")
@@ -83,11 +83,11 @@ mod tests {
             .unwrap();
         let ground_truth = String::from_utf8(command.stdout).unwrap();
 
-        let result = hash_array_from_string(&ground_truth.trim()).unwrap();
+        let result = hash_array_from_str(&ground_truth.trim()).unwrap();
         assert_eq!(hex::encode(result), ground_truth.trim());
 
         // test invalid hash
-        let result = hash_array_from_string("invalid hash");
+        let result = hash_array_from_str("invalid hash");
         assert!(result.is_err());
     }
 }

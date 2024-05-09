@@ -1,4 +1,4 @@
-use crate::hash::hash_array_from_string;
+use crate::hash::hash_array_from_str;
 use crate::objects::from_rgit_objects;
 use crate::utils::get_rgit_dir;
 use anyhow::Result;
@@ -36,7 +36,7 @@ fn cat_file(
     writer: &mut dyn io::Write,
 ) -> Result<u8> {
     let rgit_dir = get_rgit_dir(dir)?;
-    let hash_array = hash_array_from_string(&object)?;
+    let hash_array = hash_array_from_str(&object)?;
 
     let rgit_object = from_rgit_objects(rgit_dir.as_path(), &hash_array)?;
     if t {
